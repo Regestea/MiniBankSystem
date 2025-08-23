@@ -9,9 +9,64 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Backend.Tests", "Backend.Te
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Frontend", "Frontend", "{CE609670-85B9-0D16-FB54-ED063D5D8A6D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBankSystem.API", "Backend\MiniBankSystem.API\MiniBankSystem.API.csproj", "{874BFC13-C245-A727-5FB2-714134BC9FE9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBankSystem.AppHost", "MiniBankSystem.AppHost\MiniBankSystem.AppHost.csproj", "{93E37A41-5A07-452F-A155-3A74620BECE0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBankSystem.ServiceDefaults", "MiniBankSystem.ServiceDefaults\MiniBankSystem.ServiceDefaults.csproj", "{72F4A62D-0C47-33E9-8F98-EDB1DDE29615}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBankSystem.Application", "Backend\MiniBankSystem.Application\MiniBankSystem.Application.csproj", "{EABDE286-DAB9-40D5-991C-AB8AFAAC47CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBankSystem.Domain", "Backend\MiniBankSystem.Domain\MiniBankSystem.Domain.csproj", "{FB32D3C5-2581-4242-8C69-DDF80A350D37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniMankSystem.Infrastructure", "Backend\MiniMankSystem.Infrastructure\MiniMankSystem.Infrastructure.csproj", "{34101FC5-CA99-4E72-9FA4-05EBBAFF0162}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiniBankSystem.Domain.Tests", "Backend.Tests\MiniBankSystem.Domain.Tests\MiniBankSystem.Domain.Tests.csproj", "{60100595-6859-41A6-935A-96C26042066B}"
+EndProject
 Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{874BFC13-C245-A727-5FB2-714134BC9FE9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{874BFC13-C245-A727-5FB2-714134BC9FE9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{874BFC13-C245-A727-5FB2-714134BC9FE9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{874BFC13-C245-A727-5FB2-714134BC9FE9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93E37A41-5A07-452F-A155-3A74620BECE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93E37A41-5A07-452F-A155-3A74620BECE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93E37A41-5A07-452F-A155-3A74620BECE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93E37A41-5A07-452F-A155-3A74620BECE0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72F4A62D-0C47-33E9-8F98-EDB1DDE29615}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72F4A62D-0C47-33E9-8F98-EDB1DDE29615}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72F4A62D-0C47-33E9-8F98-EDB1DDE29615}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72F4A62D-0C47-33E9-8F98-EDB1DDE29615}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EABDE286-DAB9-40D5-991C-AB8AFAAC47CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EABDE286-DAB9-40D5-991C-AB8AFAAC47CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EABDE286-DAB9-40D5-991C-AB8AFAAC47CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EABDE286-DAB9-40D5-991C-AB8AFAAC47CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB32D3C5-2581-4242-8C69-DDF80A350D37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB32D3C5-2581-4242-8C69-DDF80A350D37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB32D3C5-2581-4242-8C69-DDF80A350D37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB32D3C5-2581-4242-8C69-DDF80A350D37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{34101FC5-CA99-4E72-9FA4-05EBBAFF0162}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{34101FC5-CA99-4E72-9FA4-05EBBAFF0162}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{34101FC5-CA99-4E72-9FA4-05EBBAFF0162}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{34101FC5-CA99-4E72-9FA4-05EBBAFF0162}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60100595-6859-41A6-935A-96C26042066B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60100595-6859-41A6-935A-96C26042066B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60100595-6859-41A6-935A-96C26042066B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60100595-6859-41A6-935A-96C26042066B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{874BFC13-C245-A727-5FB2-714134BC9FE9} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{EABDE286-DAB9-40D5-991C-AB8AFAAC47CB} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{FB32D3C5-2581-4242-8C69-DDF80A350D37} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{34101FC5-CA99-4E72-9FA4-05EBBAFF0162} = {1AE8ACA6-933B-BF2A-3671-3E2EAC007D16}
+		{60100595-6859-41A6-935A-96C26042066B} = {C0C6E044-CB20-653A-D6C2-4CA8FE87111B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {60F204D6-ED50-452B-B902-3F40AE0ED28E}
