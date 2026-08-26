@@ -1,5 +1,7 @@
 
-namespace MiniBankSystem.API;
+using MiniBank.ServiceDefaults;
+
+namespace MiniBank.API;
 
 public class Program
 {

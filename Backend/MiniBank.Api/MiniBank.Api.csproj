@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\MiniBank.ServiceDefaults\MiniBank.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\MiniBank.Features\MiniBank.Features.csproj" />
+    <ProjectReference Include="..\MiniBank.Infrastructure\MiniBank.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

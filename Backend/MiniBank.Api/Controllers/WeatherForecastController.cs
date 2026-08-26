@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace MiniBankSystem.API.Controllers;
+namespace MiniBank.API.Controllers;
 
 [ApiController]
 [Route("[controller]")]

@@ -1,4 +1,4 @@
-namespace MiniBankSystem.API;
+namespace MiniBank.API;
 
 public class WeatherForecast
 {
