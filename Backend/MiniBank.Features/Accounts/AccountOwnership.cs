@@ -1,0 +1,19 @@
+using MiniBank.Domain.BuildingBlocks.Exceptions;
+using MiniBank.Features.Abstractions;
+
+namespace MiniBank.Features.Accounts;
+
+/// <summary>Shared ownership guard: the caller may only operate on their own accounts.</summary>
+internal static class AccountOwnership
+{
+    public static async Task EnsureOwnedByCallerAsync(
+        Domain.CustomerAggregate.ValueObjects.CustomerId accountOwnerId,
+        ICurrentUserContext currentUser)
+    {
+        var callerCustomerId = await currentUser.GetCustomerIdAsync()
+            ?? throw new ForbiddenException("customer", "User has no linked customer profile.");
+
+        if (!accountOwnerId.Equals(callerCustomerId))
+            throw new ForbiddenException("account", "Account is not owned by the current user.");
+    }
+}

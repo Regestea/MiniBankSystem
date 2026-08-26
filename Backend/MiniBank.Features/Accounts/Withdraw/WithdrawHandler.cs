@@ -1,0 +1,33 @@
+using MiniBank.Domain.AccountAggregate;
+using MiniBank.Domain.BuildingBlocks;
+using MiniBank.Domain.BuildingBlocks.Exceptions;
+using MiniBank.Domain.BuildingBlocks.ValueObjects;
+using MiniBank.Domain.TransactionAggregate;
+using MiniBank.Features.Abstractions;
+using MiniBank.Features.Messaging;
+
+namespace MiniBank.Features.Accounts.Withdraw;
+
+internal sealed class WithdrawHandler(
+    IAccountRepository accounts,
+    ITransactionRepository transactions,
+    ICurrentUserContext currentUser,
+    IUnitOfWork unitOfWork) : ICommandHandler<WithdrawCommand, TransactionResponse>
+{
+    public async Task<TransactionResponse> Handle(WithdrawCommand command, CancellationToken cancellationToken = default)
+    {
+        var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
+            ?? throw new NotFoundException("account", command.AccountId);
+
+        await AccountOwnership.EnsureOwnedByCallerAsync(account.CustomerId, currentUser);
+
+        // Insufficient funds / frozen account → DomainInvariantViolation(422) / OperationNotAllowed(405)
+        var (tx, _) = account.Withdraw(Money.FromDecimal(command.Amount));
+
+        await transactions.AddAsync(tx, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return new TransactionResponse(tx.Id.Value, tx.Type.ToString(), tx.Amount.Amount,
+                                       tx.ReferenceId, tx.OccurredOn);
+    }
+}
