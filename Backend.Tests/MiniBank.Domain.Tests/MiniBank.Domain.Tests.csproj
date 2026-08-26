@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Backend\MiniBank.Domain\MiniBank.Domain.csproj" />
+    <ProjectReference Include="..\..\Backend\MiniBank.Features\MiniBank.Features.csproj" />
   </ItemGroup>
 
 </Project>
