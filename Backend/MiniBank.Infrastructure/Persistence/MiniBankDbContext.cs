@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MiniBank.Domain.AccountAggregate;
+using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Infrastructure.Identity;
@@ -11,7 +12,7 @@ namespace MiniBank.Infrastructure.Persistence;
 /// Single write-side context: domain aggregates + ASP.NET Core Identity tables.
 /// </summary>
 public sealed class MiniBankDbContext(DbContextOptions<MiniBankDbContext> options)
-    : IdentityDbContext<AppUser>(options)
+    : IdentityDbContext<AppUser>(options), IUnitOfWork
 {
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Account> Accounts => Set<Account>();

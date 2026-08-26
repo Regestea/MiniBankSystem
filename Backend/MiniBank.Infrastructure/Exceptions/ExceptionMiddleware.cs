@@ -1,4 +1,5 @@
 using System.Text.Json;
+using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 
@@ -11,6 +12,19 @@ namespace MiniBank.Infrastructure.Exceptions
             try
             {
                 await next(context);
+            }
+            catch (ValidationException ex) // FluentValidation — from MiniMediator pipeline
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                context.Response.Headers["content-type"] = "application/json";
+
+                var response = new
+                {
+                    ErrorCode = "validation_failed",
+                    Errors = ex.Errors.Select(e => new { e.PropertyName, e.ErrorMessage })
+                };
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
             }
             catch (DomainException ex)
             {

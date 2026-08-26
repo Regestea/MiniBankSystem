@@ -6,7 +6,8 @@ namespace MiniBank.Infrastructure;
 public static class DomainExceptionHandlingExtensions
 {
     /// <summary>
-    /// Translates DomainException (with its StatusCode) into a JSON error response.
+    /// Translates DomainException (with its StatusCode) and FluentValidation failures
+    /// into structured JSON error responses.
     /// Register after UseAuthentication/UseAuthorization so it wraps the pipeline.
     /// </summary>
     public static IApplicationBuilder UseDomainExceptionHandling(this IApplicationBuilder app)
