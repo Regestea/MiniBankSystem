@@ -18,10 +18,8 @@ public sealed class Account : AggregateRoot<AccountId>
 
     private readonly List<LedgerEntry> _ledger = new();
 
-    /// <summary>Append-only ledger of postings for this account.</summary>
     public IReadOnlyCollection<LedgerEntry> Ledger => _ledger.AsReadOnly();
 
-    // Balance is always calculated from ordered ledger — banking source of truth
     public Money Balance => CalculateOrderedBalance();
 
     private Account() { }
@@ -50,10 +48,7 @@ public sealed class Account : AggregateRoot<AccountId>
         return new Account(id, accountNumber, customerId, accountType);
     }
 
-    /// <summary>
-    /// Banking deposit — creates a Transaction (journal) and appends its posting to the ordered ledger.
-    /// Returns both so the caller can persist/dispatch the Transaction's domain events.
-    /// </summary>
+    /// <summary>Deposits money — creates transaction and appends posting.</summary>
     public (TransactionAggregate.Transaction Transaction, LedgerEntry Entry) Deposit(Money amount, string? description = null, string? referenceId = null)
     {
         EnsureActive();
@@ -65,10 +60,7 @@ public sealed class Account : AggregateRoot<AccountId>
         return (tx, entry);
     }
 
-    /// <summary>
-    /// Banking withdraw — validates sufficient funds against the ordered balance via the Transaction,
-    /// then appends its posting to the ordered ledger.
-    /// </summary>
+    /// <summary>Withdraws money — validates funds and appends posting.</summary>
     public (TransactionAggregate.Transaction Transaction, LedgerEntry Entry) Withdraw(Money amount, string? referenceId = null, string? description = null)
     {
         EnsureActive();
@@ -80,12 +72,7 @@ public sealed class Account : AggregateRoot<AccountId>
         return (tx, entry);
     }
 
-    /// <summary>
-    /// Banking transfer via Transaction Aggregate — not via Service.
-    /// Creates one Transaction (double-entry: TransferOut + TransferIn sharing ReferenceId/OccurredOn)
-    /// and applies atomically to both accounts. Balance is validated against the ordered ledger.
-    /// The returned Transaction must be persisted by the application layer together with both accounts.
-    /// </summary>
+    /// <summary>Transfers money to another account via double-entry transaction.</summary>
     public TransactionAggregate.Transaction TransferTo(Account destination, Money amount, string? description = null, string? referenceId = null)
     {
         if (destination is null)
@@ -96,7 +83,6 @@ public sealed class Account : AggregateRoot<AccountId>
         EnsureActive();
         destination.EnsureActive();
 
-        // Transaction validates amount > 0, not-same-account, sufficient funds with ordered balance
         var tx = TransactionAggregate.Transaction.CreateTransfer(Id, destination.Id, amount, Balance, description, referenceId);
         var (fromEntry, toEntry) = tx.ToTransferEntries();
 
@@ -106,7 +92,6 @@ public sealed class Account : AggregateRoot<AccountId>
         IncrementVersion();
         destination.IncrementVersion();
 
-        // Single correlated transfer event on source account (audit/read-model projection)
         AddDomainEvent(new MoneyTransferredEvent(Id, destination.Id, amount, tx.ReferenceId, fromEntry.Id, toEntry.Id));
 
         return tx;
@@ -149,7 +134,6 @@ public sealed class Account : AggregateRoot<AccountId>
         AddDomainEvent(new AccountClosedEvent(Id));
     }
 
-    /// <summary>Chronological statement — ordered by OccurredOn then Id for deterministic replay.</summary>
     public IReadOnlyList<LedgerEntry> GetStatementOrdered()
         => _ledger.OrderBy(e => e.OccurredOn).ThenBy(e => e.Id).ToList().AsReadOnly();
 
@@ -160,7 +144,6 @@ public sealed class Account : AggregateRoot<AccountId>
         return entry;
     }
 
-    /// <summary>Balance derived from ordered postings — insert-order independent.</summary>
     private Money CalculateOrderedBalance()
     {
         decimal total = 0m;
@@ -188,7 +171,6 @@ public sealed class Account : AggregateRoot<AccountId>
             throw new DomainOperationNotAllowedException(nameof(Status), $"Account is {Status}, operation not allowed. Only Active accounts can transact.");
     }
 
-    // For rehydration / EF Core — bypasses invariants, restores persisted posting Ids as-is
     private Account(AccountId id, AccountNumber accountNumber, CustomerId customerId, AccountType accountType, AccountStatus status, List<LedgerEntry> ledger, int version, DateTimeOffset createdAt, DateTimeOffset updatedAt)
         : base(id)
     {

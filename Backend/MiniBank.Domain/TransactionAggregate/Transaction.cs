@@ -8,23 +8,15 @@ using MiniBank.Domain.TransactionAggregate.ValueObjects;
 
 namespace MiniBank.Domain.TransactionAggregate;
 
-/// <summary>
-/// Transaction is the banking source of truth — immutable, append-only.
-/// Every money movement is a Transaction. For Transfer, one Transaction creates two postings (double-entry) with same ReferenceId.
-/// Balance is always calculated from ordered Transactions/Postings, not from cached field.
-/// Like real core banking: Journal -> Ledger.
-/// </summary>
+/// <summary>Immutable, append-only banking transaction.</summary>
 public sealed class Transaction : AggregateRoot<TransactionId>
 {
     public TransactionType Type { get; private set; }
     public Money Amount { get; private set; } = null!;
 
-    // For Deposit/Withdraw: only one side is set
-    // For Transfer: both are set
     public AccountId? SourceAccountId { get; private set; }
     public AccountId? DestinationAccountId { get; private set; }
 
-    // Convenience for single-account transactions
     public AccountId? AccountId => Type switch
     {
         TransactionType.Deposit => DestinationAccountId,
@@ -39,10 +31,7 @@ public sealed class Transaction : AggregateRoot<TransactionId>
 
     private readonly List<LedgerEntry> _postings = new();
 
-    /// <summary>
-    /// Double-entry postings of this Transaction — 1 entry for Deposit/Withdraw, 2 for Transfer.
-    /// All postings share the same OccurredOn and ReferenceId as the Transaction.
-    /// </summary>
+    /// <summary>Postings for this transaction (1 or 2 entries).</summary>
     public IReadOnlyList<LedgerEntry> Postings => _postings.AsReadOnly();
 
     private Transaction() { }
@@ -60,12 +49,10 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         CreatedAt = OccurredOn;
         UpdatedAt = OccurredOn;
 
-        // Create postings once — double-entry, same OccurredOn, same ReferenceId, stable Ids
         _postings.AddRange(CreatePostingsInternal());
 
         AddDomainEvent(new TransactionCreatedEvent(id, type.ToString(), amount, source?.ToString(), destination?.ToString()));
 
-        // Also raise specific money event for compatibility — uses actual posting Ids
         if (type == TransactionType.Transfer)
         {
             AddDomainEvent(new MoneyTransferredEvent(source!, destination!, amount, ReferenceId, _postings[0].Id, _postings[1].Id));
@@ -95,8 +82,6 @@ public sealed class Transaction : AggregateRoot<TransactionId>
             _ => throw new DomainInvariantViolationException(nameof(Type), $"Unknown transaction type {Type}")
         };
     }
-
-    // ========== Factories — all validation is here, like real banking ==========
 
     public static Transaction CreateDeposit(AccountId accountId, Money amount, string? description = null, string? referenceId = null)
     {
@@ -145,14 +130,10 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         return new Transaction(id, TransactionType.Transfer, amount, fromAccountId, toAccountId, description ?? "Transfer", referenceId);
     }
 
-    /// <summary>
-    /// Double-entry postings of this Transaction — 1 for Deposit/Withdraw, 2 for Transfer. Cached, stable Ids.
-    /// </summary>
+    /// <summary>Returns cached postings.</summary>
     public IReadOnlyList<LedgerEntry> ToLedgerEntries() => _postings.AsReadOnly();
 
-    /// <summary>
-    /// For Transfer, returns the two entries separately for applying to two accounts.
-    /// </summary>
+    /// <summary>Returns transfer entries separately.</summary>
     public (LedgerEntry FromEntry, LedgerEntry ToEntry) ToTransferEntries()
     {
         if (Type != TransactionType.Transfer)
@@ -160,7 +141,6 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         return (_postings[0], _postings[1]);
     }
 
-    // For rehydration — postings must be passed to preserve original posting Ids after persistence/replay
     private Transaction(TransactionId id, TransactionType type, Money amount, AccountId? source, AccountId? destination, DateTimeOffset occurredOn, string referenceId, IEnumerable<LedgerEntry>? postings)
         : base(id)
     {
@@ -173,17 +153,13 @@ public sealed class Transaction : AggregateRoot<TransactionId>
         CreatedAt = occurredOn;
         UpdatedAt = occurredOn;
 
-        // Preserve stored posting Ids when rehydrating; recreate only when not provided (tests/in-memory)
         if (postings is null)
             _postings.AddRange(CreatePostingsInternal());
         else
             _postings.AddRange(postings);
     }
 
-    /// <summary>
-    /// Rehydrates a persisted Transaction. Pass the stored <paramref name="postings"/> so original
-    /// LedgerEntry Ids survive replay (critical for MoneyTransferredEvent correlation).
-    /// </summary>
+    /// <summary>Rehydrates a persisted transaction.</summary>
     public static Transaction Rehydrate(
         TransactionId id,
         TransactionType type,

@@ -4,16 +4,14 @@ using MiniBank.Domain.BuildingBlocks.ValueObjects;
 
 namespace MiniBank.Domain.Ledger;
 
-/// <summary>
-/// Immutable ledger entry — append-only. Money movement is recorded, never mutated.
-/// </summary>
+/// <summary>Immutable, append-only ledger entry.</summary>
 public sealed class LedgerEntry : Entity<Guid>
 {
     public AccountId AccountId { get; private set; } = null!;
     public Money Amount { get; private set; } = null!;
     public LedgerEntryType Type { get; private set; }
     public DateTimeOffset OccurredOn { get; private set; }
-    public string? ReferenceId { get; private set; } // For transfer correlation
+    public string? ReferenceId { get; private set; }
     public string? Description { get; private set; }
 
     private LedgerEntry() { }

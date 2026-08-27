@@ -72,7 +72,6 @@ public sealed class Customer : AggregateRoot<CustomerId>
         AddDomainEvent(new CustomerUpdatedEvent(Id, FullName, Email, PhoneNumber));
     }
 
-    // For rehydration / EF Core
     private Customer(CustomerId id, FullName fullName, Email email, PhoneNumber phoneNumber, CustomerStatus status, int version, DateTimeOffset createdAt, DateTimeOffset updatedAt)
         : base(id)
     {
@@ -85,7 +84,6 @@ public sealed class Customer : AggregateRoot<CustomerId>
         UpdatedAt = updatedAt;
     }
 
-    /// <summary>Rehydrates a persisted Customer without raising events or enforcing transitions.</summary>
     public static Customer Rehydrate(
         CustomerId id,
         FullName fullName,
