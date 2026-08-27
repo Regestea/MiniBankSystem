@@ -3,7 +3,7 @@ using MiniBank.Domain.BuildingBlocks.Exceptions;
 
 namespace MiniBank.Domain.CustomerAggregate.ValueObjects;
 
-public record Email
+public sealed record Email
 {
     public string Value { get; }
 

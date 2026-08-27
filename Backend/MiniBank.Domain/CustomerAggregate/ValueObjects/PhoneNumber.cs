@@ -4,7 +4,7 @@ using MiniBank.Domain.BuildingBlocks.Exceptions;
 
 namespace MiniBank.Domain.CustomerAggregate.ValueObjects;
 
-public record PhoneNumber
+public sealed record PhoneNumber
 {
     private string Value { get; }
 

@@ -2,7 +2,7 @@ using MiniBank.Domain.BuildingBlocks.Exceptions;
 
 namespace MiniBank.Domain.AccountAggregate.ValueObjects;
 
-public record AccountId
+public sealed record AccountId
 {
     public Guid Value { get; }
 

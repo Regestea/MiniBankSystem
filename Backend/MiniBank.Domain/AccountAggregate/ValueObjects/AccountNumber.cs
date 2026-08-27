@@ -7,7 +7,7 @@ namespace MiniBank.Domain.AccountAggregate.ValueObjects;
 /// AccountNumber — unique bank account identifier, e.g. IR-XXXXXXXXXX (10 digits) or 16-digit.
 /// For simplicity: 16-digit numeric string, first digit not zero.
 /// </summary>
-public record AccountNumber
+public sealed record AccountNumber
 {
     public string Value { get; }
 
