@@ -3,10 +3,7 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace MiniBank.Infrastructure.Persistence;
 
-/// <summary>
-/// Used by `dotnet ef` at design time (no Aspire host running).
-/// Connection string is a local placeholder — never used at runtime.
-/// </summary>
+/// <summary>Design-time factory for EF migrations.</summary>
 public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<MiniBankDbContext>
 {
     public MiniBankDbContext CreateDbContext(string[] args)

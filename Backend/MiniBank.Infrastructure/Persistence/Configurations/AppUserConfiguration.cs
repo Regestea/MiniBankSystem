@@ -5,10 +5,7 @@ using MiniBank.Infrastructure.Identity;
 
 namespace MiniBank.Infrastructure.Persistence.Configurations;
 
-/// <summary>
-/// Links identity users to the domain Customer aggregate.
-/// One-way FK only (no navigation) — Infrastructure may know Domain ids; Domain never knows Identity.
-/// </summary>
+/// <summary>Links identity users to customers.</summary>
 internal sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 {
     public void Configure(EntityTypeBuilder<AppUser> b)

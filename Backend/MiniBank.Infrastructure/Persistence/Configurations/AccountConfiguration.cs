@@ -47,11 +47,9 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
         b.Property(a => a.CreatedAt).HasColumnName("created_at");
         b.Property(a => a.UpdatedAt).HasColumnName("updated_at");
 
-        // NOTE: intentionally NO balance column — balance is derived from ordered ledger entries.
         b.HasIndex(a => a.AccountNumber).IsUnique().HasDatabaseName("ux_accounts_number");
         b.HasIndex(a => a.CustomerId).HasDatabaseName("ix_accounts_customer");
 
-        // ---- Append-only postings (double-entry ledger) owned by the aggregate ----
         b.OwnsMany(a => a.Ledger, lb =>
         {
             lb.ToTable("ledger_entries");
@@ -81,13 +79,11 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             lb.Property(e => e.ReferenceId).HasColumnName("reference_id").HasMaxLength(64);
             lb.Property(e => e.Description).HasColumnName("description").HasMaxLength(200);
 
-            // ★ engine for derived balance + statement — see docs/database-schema.html
             lb.HasIndex(e => new { e.AccountId, e.OccurredOn, e.Id })
               .HasDatabaseName("ix_ledger_account_time");
             lb.HasIndex(e => e.ReferenceId).HasDatabaseName("ix_ledger_reference");
         });
 
-        // Ledger is exposed as IReadOnlyCollection with private _ledger backing field
         b.Navigation(a => a.Ledger).UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

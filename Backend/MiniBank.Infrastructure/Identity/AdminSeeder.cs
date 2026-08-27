@@ -5,26 +5,24 @@ using Microsoft.Extensions.Logging;
 
 namespace MiniBank.Infrastructure.Identity;
 
-/// <summary>
-/// Development seeding: ensures the single-level Admin role and one admin user
-/// (from configuration) exist after migrations. No new tables — AspNetRoles/AspNetUserRoles.
-/// </summary>
-public static class AdminSeeder
+/// <summary>Seeds Admin role and admin user from configuration.</summary>
+public sealed class AdminSeeder(
+    RoleManager<IdentityRole> roleManager,
+    UserManager<AppUser> userManager,
+    ILogger<AdminSeeder> logger,
+    IConfiguration configuration)
 {
     private const string AdminRole = "Admin";
     private const string UserRole = "User";
 
-    public static async Task SeedAsync(IServiceProvider services, IConfiguration configuration)
+    public async Task SeedAsync()
     {
-        var logger = services.GetService<ILoggerFactory>()?.CreateLogger("AdminSeeder");
-
-        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in new[] { AdminRole, UserRole })
         {
             if (!await roleManager.RoleExistsAsync(role))
             {
                 await roleManager.CreateAsync(new IdentityRole(role));
-                logger?.LogInformation("Created role '{Role}'.", role);
+                logger.LogInformation("Created role '{Role}'.", role);
             }
         }
 
@@ -34,8 +32,6 @@ public static class AdminSeeder
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             return; // nothing to seed
-
-        var userManager = services.GetRequiredService<UserManager<AppUser>>();
 
         if (await userManager.FindByEmailAsync(email) is not null)
             return; // already seeded
@@ -47,12 +43,20 @@ public static class AdminSeeder
         {
             await userManager.AddToRoleAsync(admin, AdminRole);
             await userManager.AddToRoleAsync(admin, UserRole);
-            logger?.LogInformation("Seeded admin user '{Email}' with roles Admin+User.", email);
+            logger.LogInformation("Seeded admin user '{Email}' with roles Admin+User.", email);
         }
         else
         {
-            logger?.LogError("Failed to seed admin '{Email}': {Errors}",
+            logger.LogError("Failed to seed admin '{Email}': {Errors}",
                 email, string.Join("; ", result.Errors.Select(e => e.Description)));
         }
+    }
+
+    [Obsolete("Resolve via DI and call SeedAsync() instead.")]
+    public static async Task SeedAsync(IServiceProvider services, IConfiguration configuration)
+    {
+        await using var scope = services.CreateAsyncScope();
+        var seeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
+        await seeder.SeedAsync();
     }
 }

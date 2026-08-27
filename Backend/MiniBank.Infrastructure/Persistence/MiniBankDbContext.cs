@@ -1,18 +1,15 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MiniBank.Domain.AccountAggregate;
-using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Infrastructure.Identity;
 
 namespace MiniBank.Infrastructure.Persistence;
 
-/// <summary>
-/// Single write-side context: domain aggregates + ASP.NET Core Identity tables.
-/// </summary>
+/// <summary>Write-side context: domain + Identity tables.</summary>
 public sealed class MiniBankDbContext(DbContextOptions<MiniBankDbContext> options)
-    : IdentityDbContext<AppUser>(options), IUnitOfWork
+    : IdentityDbContext<AppUser>(options)
 {
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Account> Accounts => Set<Account>();

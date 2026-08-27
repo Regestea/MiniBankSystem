@@ -6,18 +6,11 @@ using MiniBank.Features.Abstractions;
 
 namespace MiniBank.Infrastructure.Persistence;
 
-/// <summary>
-/// Read-side (Dapper) connection factory — same PostgreSQL instance/connection string
-/// that Aspire injects for the write side (EF Core).
-/// </summary>
+/// <summary>Dapper connection factory — same PostgreSQL as EF Core.</summary>
 internal sealed class NpgsqlConnectionFactory(IConfiguration configuration)
     : ISqlConnectionFactory
 {
-    static NpgsqlConnectionFactory()
-    {
-        // map snake_case columns → PascalCase DTO properties automatically
-        DefaultTypeMap.MatchNamesWithUnderscores = true;
-    }
+    static NpgsqlConnectionFactory() => DefaultTypeMap.MatchNamesWithUnderscores = true;
 
     public IDbConnection CreateOpenConnection()
     {

@@ -14,7 +14,6 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
     {
         b.ToTable("transactions", t =>
         {
-            // Transfer ⇒ both sides set · Deposit/Withdraw ⇒ exactly one side set
             t.HasCheckConstraint("ck_transactions_sides",
                 "(type = 2 AND source_account_id IS NOT NULL AND destination_account_id IS NOT NULL) " +
                 "OR (type IN (0,1) AND (source_account_id IS NULL) <> (destination_account_id IS NULL))");
@@ -58,7 +57,6 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         b.Property(x => x.CreatedAt).HasColumnName("created_at");
         b.Property(x => x.UpdatedAt).HasColumnName("updated_at");
 
-        // Postings are derived/cached in the domain and persisted under accounts.ledger_entries
         b.Ignore(x => x.Postings);
 
         b.HasIndex(x => x.ReferenceId).IsUnique().HasDatabaseName("ux_transactions_reference");
