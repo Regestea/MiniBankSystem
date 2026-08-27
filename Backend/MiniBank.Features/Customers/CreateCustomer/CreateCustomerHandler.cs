@@ -9,12 +9,11 @@ internal sealed class CreateCustomerHandler(
     ICustomerRepository customers,
     IUnitOfWork unitOfWork) : ICommandHandler<CreateCustomerCommand, CustomerResponse>
 {
-    public async Task<CustomerResponse> Handle(CreateCustomerCommand command, CancellationToken cancellationToken = default)
+    public async Task<CustomerResponse> HandleAsync(CreateCustomerCommand command, CancellationToken cancellationToken = default)
     {
         if (await customers.EmailExistsAsync(command.Email, cancellationToken))
             throw new DomainConflictException(nameof(command.Email), "Email already registered.");
 
-        // Domain factory validates VOs and starts lifecycle at Pending
         var customer = Customer.Create(command.FullName, command.Email, command.PhoneNumber);
 
         await customers.AddAsync(customer, cancellationToken);

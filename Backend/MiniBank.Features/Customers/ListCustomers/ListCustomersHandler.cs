@@ -4,7 +4,6 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.ListCustomers;
 
-// Read side — Dapper, paged + total count
 internal sealed class ListCustomersHandler(ISqlConnectionFactory connectionFactory)
     : IQueryHandler<ListCustomersQuery, CustomersPageResponse>
 {
@@ -17,7 +16,7 @@ internal sealed class ListCustomersHandler(ISqlConnectionFactory connectionFacto
         SELECT COUNT(*) FROM customers;
         """;
 
-    public async Task<CustomersPageResponse> Handle(ListCustomersQuery query, CancellationToken cancellationToken = default)
+    public async Task<CustomersPageResponse> HandleAsync(ListCustomersQuery query, CancellationToken cancellationToken = default)
     {
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);

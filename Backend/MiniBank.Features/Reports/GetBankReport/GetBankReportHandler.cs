@@ -4,7 +4,6 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Reports.GetBankReport;
 
-// Admin report — computed from the immutable ledger, not from any cached balance
 internal sealed class GetBankReportHandler(ISqlConnectionFactory connectionFactory)
     : IQueryHandler<GetBankReportQuery, BankReportResponse>
 {
@@ -16,7 +15,7 @@ internal sealed class GetBankReportHandler(ISqlConnectionFactory connectionFacto
                   FROM ledger_entries)                                                 AS total_balance;
         """;
 
-    public async Task<BankReportResponse> Handle(GetBankReportQuery query, CancellationToken cancellationToken = default)
+    public async Task<BankReportResponse> HandleAsync(GetBankReportQuery query, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateOpenConnection();
 

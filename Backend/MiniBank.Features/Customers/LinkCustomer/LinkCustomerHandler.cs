@@ -8,16 +8,13 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.LinkCustomer;
 
-/// <summary>
-/// Onboarding: the authenticated user creates their own Customer profile (Pending)
-/// and the profile is linked to the AspNetUsers row (users.customer_id).
-/// </summary>
+/// <summary>Links authenticated user to new customer profile.</summary>
 internal sealed class LinkCustomerHandler(
     IAppUserDirectory users,
     ICustomerRepository customers,
     IUnitOfWork unitOfWork) : ICommandHandler<LinkCustomerCommand, CustomerResponse>
 {
-    public async Task<CustomerResponse> Handle(LinkCustomerCommand command, CancellationToken cancellationToken = default)
+    public async Task<CustomerResponse> HandleAsync(LinkCustomerCommand command, CancellationToken cancellationToken = default)
     {
         var user = await users.FindByIdAsync(command.UserId, cancellationToken)
             ?? throw new NotFoundException("user", command.UserId);
@@ -41,7 +38,7 @@ internal sealed class LinkCustomerHandler(
 
         await users.EnsureUserRoleAsync(command.UserId, cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken); // one atomic commit: customer + users.customer_id + role
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return CustomerResponse.From(customer);
     }

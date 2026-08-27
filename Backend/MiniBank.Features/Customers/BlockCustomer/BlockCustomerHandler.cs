@@ -9,7 +9,7 @@ internal sealed class BlockCustomerHandler(
     ICustomerRepository customers,
     IUnitOfWork unitOfWork) : ICommandHandler<BlockCustomerCommand, BlockResponse>
 {
-    public async Task<BlockResponse> Handle(BlockCustomerCommand command, CancellationToken cancellationToken = default)
+    public async Task<BlockResponse> HandleAsync(BlockCustomerCommand command, CancellationToken cancellationToken = default)
     {
         var customer = await customers.GetByIdAsync(command.CustomerId, cancellationToken)
             ?? throw new NotFoundException("customer", command.CustomerId);

@@ -4,7 +4,6 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.GetCustomer;
 
-// Read side — Dapper, straight SQL on the customers table (snake_case auto-mapped)
 internal sealed class GetCustomerHandler(ISqlConnectionFactory connectionFactory)
     : IQueryHandler<GetCustomerQuery, CustomerDetailResponse>
 {
@@ -14,7 +13,7 @@ internal sealed class GetCustomerHandler(ISqlConnectionFactory connectionFactory
         WHERE  customer_id = @CustomerId
         """;
 
-    public async Task<CustomerDetailResponse> Handle(GetCustomerQuery query, CancellationToken cancellationToken = default)
+    public async Task<CustomerDetailResponse> HandleAsync(GetCustomerQuery query, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateOpenConnection();
 

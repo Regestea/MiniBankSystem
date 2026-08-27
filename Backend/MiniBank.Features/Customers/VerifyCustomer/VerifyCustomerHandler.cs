@@ -9,12 +9,12 @@ internal sealed class VerifyCustomerHandler(
     ICustomerRepository customers,
     IUnitOfWork unitOfWork) : ICommandHandler<VerifyCustomerCommand, VerifyResponse>
 {
-    public async Task<VerifyResponse> Handle(VerifyCustomerCommand command, CancellationToken cancellationToken = default)
+    public async Task<VerifyResponse> HandleAsync(VerifyCustomerCommand command, CancellationToken cancellationToken = default)
     {
         var customer = await customers.GetByIdAsync(command.CustomerId, cancellationToken)
             ?? throw new NotFoundException("customer", command.CustomerId);
 
-        customer.Verify(); // domain guard: only Pending → Verified
+        customer.Verify();
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

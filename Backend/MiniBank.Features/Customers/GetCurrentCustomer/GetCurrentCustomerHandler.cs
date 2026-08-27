@@ -5,7 +5,6 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.GetCurrentCustomer;
 
-// Read side - Dapper: resolve the user''s linked customer (or null -> 404 in controller)
 internal sealed class GetCurrentCustomerHandler(ISqlConnectionFactory connectionFactory)
     : IQueryHandler<GetCurrentCustomerQuery, CustomerDetailResponse?>
 {
@@ -16,7 +15,7 @@ internal sealed class GetCurrentCustomerHandler(ISqlConnectionFactory connection
         WHERE  u.Id = @UserId
         """;
 
-    public async Task<CustomerDetailResponse?> Handle(GetCurrentCustomerQuery query, CancellationToken cancellationToken = default)
+    public async Task<CustomerDetailResponse?> HandleAsync(GetCurrentCustomerQuery query, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateOpenConnection();
 
