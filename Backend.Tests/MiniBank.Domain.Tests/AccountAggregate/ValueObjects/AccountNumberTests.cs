@@ -19,9 +19,9 @@ public class AccountNumberTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    public void Constructor_Empty_ThrowsDomainValidationException(string invalid)
+    public void Constructor_Empty_ThrowsDomainValidationException(string? invalid)
     {
-        Assert.Throws<DomainValidationException>(() => new AccountNumber(invalid));
+        Assert.Throws<DomainValidationException>(() => new AccountNumber(invalid!));
     }
 
     [Theory]

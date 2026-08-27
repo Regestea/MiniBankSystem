@@ -21,9 +21,9 @@ public class PhoneNumberTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    public void Constructor_EmptyOrWhitespace_Throws(string invalidNumber)
+    public void Constructor_EmptyOrWhitespace_Throws(string? invalidNumber)
     {
-        Assert.Throws<DomainValidationException>(() => new PhoneNumber(invalidNumber));
+        Assert.Throws<DomainValidationException>(() => new PhoneNumber(invalidNumber!));
     }
 
     [Theory]

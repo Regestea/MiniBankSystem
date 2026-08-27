@@ -22,9 +22,9 @@ public class FullNameTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    public void FullName_EmptyOrWhitespace_ThrowsDomainValidationException(string invalidName)
+    public void FullName_EmptyOrWhitespace_ThrowsDomainValidationException(string? invalidName)
     {
-        Assert.Throws<DomainValidationException>(() => new FullName(invalidName));
+        Assert.Throws<DomainValidationException>(() => new FullName(invalidName!));
     }
 
     [Theory]

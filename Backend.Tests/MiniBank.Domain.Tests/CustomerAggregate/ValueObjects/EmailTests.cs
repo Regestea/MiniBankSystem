@@ -21,9 +21,9 @@ public class EmailTests
     [InlineData("")]
     [InlineData(" ")]
     [InlineData(null)]
-    public void Constructor_EmptyOrWhitespace_ThrowsDomainValidationException(string invalid)
+    public void Constructor_EmptyOrWhitespace_ThrowsDomainValidationException(string? invalid)
     {
-        Assert.Throws<DomainValidationException>(() => new Email(invalid));
+        Assert.Throws<DomainValidationException>(() => new Email(invalid!));
     }
 
     [Theory]
