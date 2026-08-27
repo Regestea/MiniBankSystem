@@ -3,7 +3,7 @@ using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.BuildingBlocks.ValueObjects;
 using MiniBank.Domain.TransactionAggregate;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Accounts.Transfer;

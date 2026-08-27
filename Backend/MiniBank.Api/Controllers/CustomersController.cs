@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Features.Customers;
 using MiniBank.Features.Customers.CreateCustomer;
 using MiniBank.Features.Customers.GetCurrentCustomer;

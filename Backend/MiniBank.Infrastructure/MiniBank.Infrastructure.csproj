@@ -11,14 +11,19 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="FluentValidation" Version="12.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.11" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="MiniBank.Infrastructure.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MiniBank.Abstractions\MiniBank.Abstractions.csproj" />
     <ProjectReference Include="..\MiniBank.Domain\MiniBank.Domain.csproj" />
-    <ProjectReference Include="..\MiniBank.Features\MiniBank.Features.csproj" />
   </ItemGroup>
 
 </Project>

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using MiniBank.Api.Auth;
 using MiniBank.Features;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Infrastructure;
 using MiniBank.Infrastructure.Exceptions;
 using MiniBank.Infrastructure.Identity;

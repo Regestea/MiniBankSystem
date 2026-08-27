@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Infrastructure.Identity;
 
 namespace MiniBank.Infrastructure.Identity;

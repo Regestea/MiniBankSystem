@@ -14,9 +14,12 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="MiniBank.Domain.Tests" />
+    <InternalsVisibleTo Include="MiniBank.Features.Tests" />
+    <InternalsVisibleTo Include="MiniBank.Infrastructure.Tests" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MiniBank.Abstractions\MiniBank.Abstractions.csproj" />
     <ProjectReference Include="..\MiniBank.Domain\MiniBank.Domain.csproj" />
   </ItemGroup>
 

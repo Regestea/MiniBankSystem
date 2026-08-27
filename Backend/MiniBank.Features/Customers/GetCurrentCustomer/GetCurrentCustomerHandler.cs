@@ -1,5 +1,5 @@
 using Dapper;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Features.Customers.GetCustomer;
 using MiniBank.Features.Messaging;
 

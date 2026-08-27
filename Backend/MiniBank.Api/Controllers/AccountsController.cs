@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Features.Accounts;
 using MiniBank.Features.Accounts.CloseAccount;
 using MiniBank.Features.Accounts.Deposit;

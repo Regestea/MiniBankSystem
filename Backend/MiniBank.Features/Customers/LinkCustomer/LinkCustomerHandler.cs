@@ -2,7 +2,7 @@ using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Features.Customers;
 using MiniBank.Features.Messaging;
 

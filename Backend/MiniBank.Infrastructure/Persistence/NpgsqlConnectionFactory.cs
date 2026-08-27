@@ -2,7 +2,7 @@ using System.Data;
 using Dapper;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 
 namespace MiniBank.Infrastructure.Persistence;
 

@@ -8,7 +8,7 @@ using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.TransactionAggregate;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Infrastructure.Exceptions;
 using MiniBank.Infrastructure.Identity;
 using MiniBank.Infrastructure.Persistence;

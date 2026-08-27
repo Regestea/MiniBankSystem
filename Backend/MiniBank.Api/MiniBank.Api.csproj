@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\MiniBank.ServiceDefaults\MiniBank.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\MiniBank.Abstractions\MiniBank.Abstractions.csproj" />
     <ProjectReference Include="..\MiniBank.Features\MiniBank.Features.csproj" />
     <ProjectReference Include="..\MiniBank.Infrastructure\MiniBank.Infrastructure.csproj" />
   </ItemGroup>

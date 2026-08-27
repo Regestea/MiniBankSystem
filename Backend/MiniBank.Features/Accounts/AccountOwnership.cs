@@ -1,5 +1,5 @@
 using MiniBank.Domain.BuildingBlocks.Exceptions;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 
 namespace MiniBank.Features.Accounts;
 

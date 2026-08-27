@@ -1,5 +1,5 @@
 using Dapper;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.ListCustomers;

@@ -2,7 +2,7 @@ using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
-using MiniBank.Features.Abstractions;
+using MiniBank.Abstractions;
 using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Accounts.OpenAccount;
