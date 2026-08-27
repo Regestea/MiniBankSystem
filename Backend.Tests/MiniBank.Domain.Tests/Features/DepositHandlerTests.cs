@@ -1,12 +1,9 @@
 using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
-using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
-using MiniBank.Features.Abstractions;
-using MiniBank.Features.Tests;
 using MiniBank.Features.Accounts.Deposit;
 
-namespace MiniBank.Features.Tests;
+namespace MiniBank.Domain.Tests.Features;
 
 public class DepositHandlerTests
 {
@@ -25,7 +22,7 @@ public class DepositHandlerTests
         await _accounts.AddAsync(account);
         var handler = BuildHandler(_ownerId.Value);
 
-        var response = await handler.Handle(new DepositCommand(account.Id.Value, 500m));
+        var response = await handler.HandleAsync(new DepositCommand(account.Id.Value, 500m));
 
         Assert.Equal(500m, response.Amount);
         Assert.Single(account.Ledger);                 // posting appended to aggregate ledger
@@ -43,7 +40,7 @@ public class DepositHandlerTests
         var handler = BuildHandler(otherCustomer);     // different customer
 
         await Assert.ThrowsAsync<ForbiddenException>(
-            () => handler.Handle(new DepositCommand(account.Id.Value, 100m)));
+            () => handler.HandleAsync(new DepositCommand(account.Id.Value, 100m)));
         Assert.Empty(_transactions.Store);             // nothing persisted
     }
 
@@ -55,7 +52,7 @@ public class DepositHandlerTests
         var handler = BuildHandler(null);
 
         await Assert.ThrowsAsync<ForbiddenException>(
-            () => handler.Handle(new DepositCommand(account.Id.Value, 100m)));
+            () => handler.HandleAsync(new DepositCommand(account.Id.Value, 100m)));
     }
 
     [Fact]
@@ -65,7 +62,7 @@ public class DepositHandlerTests
         var randomId = Guid.NewGuid();
 
         var ex = await Assert.ThrowsAsync<NotFoundException>(
-            () => handler.Handle(new DepositCommand(randomId, 100m)));
+            () => handler.HandleAsync(new DepositCommand(randomId, 100m)));
 
         Assert.Contains(randomId.ToString(), ex.Details.ToString());
     }
@@ -79,6 +76,6 @@ public class DepositHandlerTests
         var handler = BuildHandler(_ownerId.Value);
 
         await Assert.ThrowsAsync<DomainOperationNotAllowedException>(
-            () => handler.Handle(new DepositCommand(account.Id.Value, 100m)));
+            () => handler.HandleAsync(new DepositCommand(account.Id.Value, 100m)));
     }
 }

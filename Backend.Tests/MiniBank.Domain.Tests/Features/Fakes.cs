@@ -5,9 +5,8 @@ using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Domain.TransactionAggregate.ValueObjects;
-using MiniBank.Features.Abstractions;
 
-namespace MiniBank.Features.Tests;
+namespace MiniBank.Domain.Tests.Features;
 
 internal sealed class FakeCustomerRepository : ICustomerRepository
 {
