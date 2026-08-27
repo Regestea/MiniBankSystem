@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using MiniBank.Api.Auth;
 using MiniBank.Features;
 using MiniBank.Features.Abstractions;
 using MiniBank.Infrastructure;
+using MiniBank.Infrastructure.Exceptions;
 using MiniBank.Infrastructure.Identity;
 using MiniBank.Infrastructure.Persistence;
 using MiniBank.ServiceDefaults;
@@ -16,26 +18,12 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         builder.AddServiceDefaults();
+        builder.AddInfrastructureServices(builder.Configuration);
+        builder.AddFeatureServices();
 
-        // Persistence: PostgreSQL DbContext (connection string injected by Aspire) + repos/UoW/Dapper-factory
-        builder.AddMiniBankPersistence();
-
-        // Vertical slices: in-house mediator + handlers + validators
-        builder.Services.AddMiniBankFeatures();
-
-        // ASP.NET Core Identity — default tables + default APIs (/register /login /refresh …)
-        builder.Services.AddAuthorization();
-        builder.Services.AddIdentityApiEndpoints<AppUser>()
-                        .AddRoles<IdentityRole>()
-                        .AddEntityFrameworkStores<MiniBankDbContext>();
-
-        // Ambient current-user context for handlers (ownership checks)
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
-
         builder.Services.AddControllers();
-
-        // OpenAPI document (served at /openapi/v1.json)
         builder.Services.AddOpenApi();
 
         var app = builder.Build();
@@ -45,28 +33,26 @@ public class Program
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
-            await app.Services.MigrateDatabaseAsync();  // auto-apply migrations in Dev
-            await AdminSeeder.SeedAsync(app.Services, app.Configuration); // Admin role + admin user from config
+            await app.Services.MigrateDatabaseAsync();
+            await using var scope = app.Services.CreateAsyncScope();
+            var seeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
+            await seeder.SeedAsync();
 
-            // Scalar UI replaces .http files & Swagger UI — dark theme, interactive testing
             app.MapScalarApiReference(options =>
             {
-                options
-                    .WithTitle("MiniBank API")
-                    .WithTheme(ScalarTheme.DeepSpace)   // dark theme
+                options.WithTitle("MiniBank API")
+                    .WithTheme(ScalarTheme.DeepSpace)
                     .WithDefaultHttpClient(ScalarTarget.JavaScript, ScalarClient.Fetch)
-                    .WithPersistentAuthentication();     // keeps Bearer token between requests
+                    .WithPersistentAuthentication();
             });
         }
 
         app.UseHttpsRedirection();
-
-        app.UseDomainExceptionHandling();   // DomainException/Validation → status-coded JSON
+        app.UseDomainExceptionHandling();
         app.UseAuthentication();
         app.UseAuthorization();
-
-        app.MapIdentityApi<AppUser>();      // Auth endpoints
-        app.MapControllers();               // business features — Controllers only
+        app.MapIdentityApi<AppUser>();
+        app.MapControllers();
 
         app.Run();
     }

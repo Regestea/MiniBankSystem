@@ -13,25 +13,25 @@ namespace MiniBank.Api.Controllers.Admin;
 [Route("api/admin/customers")]
 public sealed class AdminCustomersController(IMediator mediator) : ControllerBase
 {
-    /// <summary>Admin — paged customer list.</summary>
+    /// <summary>List customers.</summary>
     [HttpGet]
     public async Task<ActionResult<CustomersPageResponse>> List(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
-        => Ok(await mediator.Send(new ListCustomersQuery(page, pageSize), ct));
+        => Ok(await mediator.SendAsync(new ListCustomersQuery(page, pageSize), ct));
 
-    /// <summary>Admin — verify a Pending customer (enables account opening).</summary>
+    /// <summary>Verify customer.</summary>
     [HttpPatch("{id:guid}/verify")]
     public async Task<IActionResult> Verify([FromRoute] Guid id, CancellationToken ct)
     {
-        var response = await mediator.Send(new VerifyCustomerCommand(id), ct);
+        var response = await mediator.SendAsync(new VerifyCustomerCommand(id), ct);
         return Ok(response);
     }
 
-    /// <summary>Admin — block a customer.</summary>
+    /// <summary>Block customer.</summary>
     [HttpPatch("{id:guid}/block")]
     public async Task<IActionResult> Block([FromRoute] Guid id, CancellationToken ct)
     {
-        var response = await mediator.Send(new BlockCustomerCommand(id), ct);
+        var response = await mediator.SendAsync(new BlockCustomerCommand(id), ct);
         return Ok(response);
     }
 }

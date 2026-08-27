@@ -13,18 +13,18 @@ namespace MiniBank.Api.Controllers.Admin;
 [Route("api/admin")]
 public sealed class AdminController(IMediator mediator) : ControllerBase
 {
-    /// <summary>Admin — freeze an account: new transactions are rejected until unfrozen.</summary>
+    /// <summary>Freeze account.</summary>
     [HttpPatch("accounts/{accountId:guid}/freeze")]
     public async Task<ActionResult<AccountStatusResponse>> Freeze([FromRoute] Guid accountId, CancellationToken ct)
-        => Ok(await mediator.Send(new FreezeAccountCommand(accountId), ct));
+        => Ok(await mediator.SendAsync(new FreezeAccountCommand(accountId), ct));
 
-    /// <summary>Admin — unfreeze a frozen account.</summary>
+    /// <summary>Unfreeze account.</summary>
     [HttpPatch("accounts/{accountId:guid}/unfreeze")]
     public async Task<ActionResult<AccountStatusResponse>> Unfreeze([FromRoute] Guid accountId, CancellationToken ct)
-        => Ok(await mediator.Send(new UnfreezeAccountCommand(accountId), ct));
+        => Ok(await mediator.SendAsync(new UnfreezeAccountCommand(accountId), ct));
 
-    /// <summary>Admin — bank-wide report (counts + total balance derived from the ledger).</summary>
+    /// <summary>Bank report.</summary>
     [HttpGet("reports/bank")]
     public async Task<ActionResult<BankReportResponse>> BankReport(CancellationToken ct)
-        => Ok(await mediator.Send(new GetBankReportQuery(), ct));
+        => Ok(await mediator.SendAsync(new GetBankReportQuery(), ct));
 }

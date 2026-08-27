@@ -13,7 +13,6 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Api.Controllers;
 
-/// <summary>Self-service banking endpoints — My prefix removed, owner filter automatic for User role.</summary>
 [ApiController]
 [Authorize(Roles = "User,Admin")]
 [Route("api/accounts")]
@@ -24,19 +23,19 @@ public sealed class AccountsController(IMediator mediator, ICurrentUserContext c
         [FromBody] OpenAccountRequest request, CancellationToken ct)
     {
         var command = new OpenAccountCommand(currentUser.UserId, request.AccountType);
-        var response = await mediator.Send(command, ct);
+        var response = await mediator.SendAsync(command, ct);
         return CreatedAtAction(nameof(GetStatement), new { accountId = response.AccountId }, response);
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AccountDto>>> List(CancellationToken ct)
-        => Ok(await mediator.Send(new GetAccountsQuery(currentUser.UserId), ct));
+        => Ok(await mediator.SendAsync(new GetAccountsQuery(currentUser.UserId), ct));
 
     [HttpPost("{accountId:guid}/deposit")]
     public async Task<ActionResult<TransactionResponse>> Deposit(
         [FromRoute] Guid accountId, [FromBody] AmountRequest request, CancellationToken ct)
     {
-        var response = await mediator.Send(new DepositCommand(accountId, request.Amount), ct);
+        var response = await mediator.SendAsync(new DepositCommand(accountId, request.Amount), ct);
         return Ok(response);
     }
 
@@ -44,7 +43,7 @@ public sealed class AccountsController(IMediator mediator, ICurrentUserContext c
     public async Task<ActionResult<TransactionResponse>> Withdraw(
         [FromRoute] Guid accountId, [FromBody] AmountRequest request, CancellationToken ct)
     {
-        var response = await mediator.Send(new WithdrawCommand(accountId, request.Amount), ct);
+        var response = await mediator.SendAsync(new WithdrawCommand(accountId, request.Amount), ct);
         return Ok(response);
     }
 
@@ -52,7 +51,7 @@ public sealed class AccountsController(IMediator mediator, ICurrentUserContext c
     public async Task<ActionResult<TransferResponse>> Transfer(
         [FromBody] TransferRequest request, CancellationToken ct)
     {
-        var response = await mediator.Send(
+        var response = await mediator.SendAsync(
             new TransferCommand(request.FromAccountId, request.ToAccountId, request.Amount), ct);
         return Ok(response);
     }
@@ -60,12 +59,12 @@ public sealed class AccountsController(IMediator mediator, ICurrentUserContext c
     [HttpGet("{accountId:guid}/statement")]
     public async Task<ActionResult<StatementResponse>> GetStatement(
         [FromRoute] Guid accountId, CancellationToken ct)
-        => Ok(await mediator.Send(new GetStatementQuery(accountId, currentUser.UserId), ct));
+        => Ok(await mediator.SendAsync(new GetStatementQuery(accountId, currentUser.UserId), ct));
 
     [HttpPatch("{accountId:guid}/close")]
     public async Task<IActionResult> Close([FromRoute] Guid accountId, CancellationToken ct)
     {
-        var response = await mediator.Send(new CloseAccountCommand(accountId), ct);
+        var response = await mediator.SendAsync(new CloseAccountCommand(accountId), ct);
         return Ok(response);
     }
 

@@ -5,10 +5,7 @@ using MiniBank.Infrastructure.Identity;
 
 namespace MiniBank.Api.Auth;
 
-/// <summary>
-/// Host-side implementation of the ambient current-user context.
-/// UserId comes from JWT claims; CustomerId resolved from the linked AspNetUsers row.
-/// </summary>
+/// <summary>Current user context via HttpContext.</summary>
 internal sealed class CurrentUserContext(
     IHttpContextAccessor httpContextAccessor,
     UserManager<AppUser> userManager) : ICurrentUserContext
