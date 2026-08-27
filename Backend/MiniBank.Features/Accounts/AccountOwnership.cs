@@ -3,7 +3,6 @@ using MiniBank.Features.Abstractions;
 
 namespace MiniBank.Features.Accounts;
 
-/// <summary>Shared ownership guard: the caller may only operate on their own accounts.</summary>
 internal static class AccountOwnership
 {
     public static async Task EnsureOwnedByCallerAsync(
