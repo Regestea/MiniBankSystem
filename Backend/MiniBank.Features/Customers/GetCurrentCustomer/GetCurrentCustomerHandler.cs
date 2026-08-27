@@ -11,8 +11,7 @@ internal sealed class GetCurrentCustomerHandler(ISqlConnectionFactory connection
     private const string Sql = """
         SELECT c.customer_id, c.full_name, c.email, c.phone_number, c.status, c.created_at
         FROM   customers c
-        JOIN   "AspNetUsers" u ON u.customer_id = c.customer_id
-        WHERE  u.Id = @UserId
+        WHERE  c.customer_id = @UserId
         """;
 
     public async Task<CustomerDetailResponse?> HandleAsync(GetCurrentCustomerQuery query, CancellationToken cancellationToken = default)

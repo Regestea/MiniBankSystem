@@ -20,7 +20,7 @@ internal sealed class TransferHandler(
         var from = await accounts.LoadAsync(command.FromAccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.FromAccountId);
 
-        await AccountOwnership.EnsureOwnedByCallerAsync(from.CustomerId, currentUser);
+        AccountOwnership.EnsureOwnedByCaller(from.CustomerId, currentUser);
 
         var to = await accounts.LoadAsync(command.ToAccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.ToAccountId);

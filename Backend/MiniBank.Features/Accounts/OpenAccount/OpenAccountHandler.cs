@@ -2,6 +2,7 @@ using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
+using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Abstractions;
 using MiniBank.Features.Messaging;
 
@@ -15,8 +16,7 @@ internal sealed class OpenAccountHandler(
 {
     public async Task<AccountResponse> HandleAsync(OpenAccountCommand command, CancellationToken cancellationToken = default)
     {
-        var callerCustomerId = await currentUser.GetCustomerIdAsync(cancellationToken)
-            ?? throw new ForbiddenException("customer", "User has no linked customer profile.");
+        var callerCustomerId = new CustomerId(currentUser.UserId);
 
         var customer = await customers.GetByIdAsync(callerCustomerId, cancellationToken)
             ?? throw new NotFoundException("customer", callerCustomerId);

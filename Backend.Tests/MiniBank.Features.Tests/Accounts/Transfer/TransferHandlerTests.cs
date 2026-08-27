@@ -4,6 +4,7 @@ using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
+using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Features.Accounts.Transfer;
 using NSubstitute;
@@ -21,7 +22,7 @@ public sealed class TransferHandlerTests
 
     private static Account CreateAccount(Guid ownerId, decimal balance = 1000m)
     {
-        var acc = Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(ownerId), AccountType.Current);
+        var acc = Account.Open(new CustomerId(ownerId), AccountType.Current);
         acc.Deposit(MiniBank.Domain.BuildingBlocks.ValueObjects.Money.FromDecimal(balance));
         return acc;
     }
@@ -31,10 +32,10 @@ public sealed class TransferHandlerTests
     {
         var ownerId = Guid.NewGuid();
         var from = CreateAccount(ownerId, 1000m);
-        var to = Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(Guid.NewGuid()), AccountType.Current);
+        var to = Account.Open(new CustomerId(Guid.NewGuid()), AccountType.Current);
         _accounts.LoadAsync(from.Id, Arg.Any<CancellationToken>()).Returns(from);
         _accounts.LoadAsync(to.Id, Arg.Any<CancellationToken>()).Returns(to);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var response = await handler.HandleAsync(new TransferCommand(from.Id.Value, to.Id.Value, 300m));
@@ -63,7 +64,7 @@ public sealed class TransferHandlerTests
         var from = CreateAccount(ownerId);
         _accounts.LoadAsync(from.Id, Arg.Any<CancellationToken>()).Returns(from);
         _accounts.LoadAsync(Arg.Any<AccountId>(), Arg.Any<CancellationToken>()).Returns((Account?)null);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new TransferCommand(from.Id.Value, Guid.NewGuid(), 100m));
@@ -75,10 +76,10 @@ public sealed class TransferHandlerTests
     {
         var ownerId = Guid.NewGuid();
         var from = CreateAccount(ownerId);
-        var to = Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(Guid.NewGuid()), AccountType.Current);
+        var to = Account.Open(new CustomerId(Guid.NewGuid()), AccountType.Current);
         _accounts.LoadAsync(from.Id, Arg.Any<CancellationToken>()).Returns(from);
         _accounts.LoadAsync(to.Id, Arg.Any<CancellationToken>()).Returns(to);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(Guid.NewGuid());
+        _currentUser.UserId.Returns(Guid.NewGuid());
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new TransferCommand(from.Id.Value, to.Id.Value, 100m));
@@ -90,10 +91,10 @@ public sealed class TransferHandlerTests
     {
         var ownerId = Guid.NewGuid();
         var from = CreateAccount(ownerId, 100m);
-        var to = Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(Guid.NewGuid()), AccountType.Current);
+        var to = Account.Open(new CustomerId(Guid.NewGuid()), AccountType.Current);
         _accounts.LoadAsync(from.Id, Arg.Any<CancellationToken>()).Returns(from);
         _accounts.LoadAsync(to.Id, Arg.Any<CancellationToken>()).Returns(to);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new TransferCommand(from.Id.Value, to.Id.Value, 200m));

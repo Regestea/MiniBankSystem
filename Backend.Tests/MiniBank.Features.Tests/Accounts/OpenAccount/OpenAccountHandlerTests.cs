@@ -4,6 +4,7 @@ using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
+using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Features.Accounts.OpenAccount;
 using NSubstitute;
 
@@ -21,43 +22,30 @@ public sealed class OpenAccountHandlerTests
     [Fact]
     public async Task HandleAsync_VerifiedCustomer_CreatesAccount()
     {
-        var customer = Customer.Create("John", "john@test.com", "09123456789");
+        var userId = Guid.NewGuid();
+        var customer = Customer.Create(new FullName("John"), new Email("john@test.com"), new PhoneNumber("09123456789"), new CustomerId(userId));
         customer.Verify();
-        var customerId = customer.Id.Value;
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(customerId);
-        _customers.GetByIdAsync(Arg.Is<Domain.CustomerAggregate.ValueObjects.CustomerId>(id => id.Value == customerId), Arg.Any<CancellationToken>()).Returns(customer);
+        _currentUser.UserId.Returns(userId);
+        _customers.GetByIdAsync(Arg.Is<Domain.CustomerAggregate.ValueObjects.CustomerId>(id => id.Value == userId), Arg.Any<CancellationToken>()).Returns(customer);
 
         var handler = CreateHandler();
-        var response = await handler.HandleAsync(new OpenAccountCommand(Guid.NewGuid(), "Current"));
+        var response = await handler.HandleAsync(new OpenAccountCommand("Current"));
 
         response.AccountId.Should().NotBe(Guid.Empty);
         response.Status.Should().Be("Active");
-        await _accounts.Received(1).AddAsync(Arg.Is<Account>(a => a.CustomerId.Value == customerId), Arg.Any<CancellationToken>());
+        await _accounts.Received(1).AddAsync(Arg.Is<Account>(a => a.CustomerId.Value == userId), Arg.Any<CancellationToken>());
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsync_UserWithoutCustomer_ThrowsForbidden()
-    {
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
-        var handler = CreateHandler();
-
-        var act = async () => await handler.HandleAsync(new OpenAccountCommand(Guid.NewGuid(), "Current"));
-
-        await act.Should().ThrowAsync<ForbiddenException>()
-            .Where(ex => ex.Field == "customer");
-        await _accounts.DidNotReceive().AddAsync(Arg.Any<Account>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task HandleAsync_CustomerNotFound_ThrowsNotFound()
     {
-        var cid = Guid.NewGuid();
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(cid);
+        var userId = Guid.NewGuid();
+        _currentUser.UserId.Returns(userId);
         _customers.GetByIdAsync(Arg.Any<Domain.CustomerAggregate.ValueObjects.CustomerId>(), Arg.Any<CancellationToken>()).Returns((Customer?)null);
         var handler = CreateHandler();
 
-        var act = async () => await handler.HandleAsync(new OpenAccountCommand(Guid.NewGuid(), "Savings"));
+        var act = async () => await handler.HandleAsync(new OpenAccountCommand("Savings"));
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
@@ -65,13 +53,14 @@ public sealed class OpenAccountHandlerTests
     [Fact]
     public async Task HandleAsync_PendingCustomer_ThrowsOperationNotAllowed()
     {
-        var customer = Customer.Create("Pending", "pending@test.com", "09123456789");
+        var userId = Guid.NewGuid();
+        var customer = Customer.Create(new FullName("Pending"), new Email("pending@test.com"), new PhoneNumber("09123456789"), new CustomerId(userId));
         // status is Pending
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(customer.Id.Value);
+        _currentUser.UserId.Returns(userId);
         _customers.GetByIdAsync(customer.Id, Arg.Any<CancellationToken>()).Returns(customer);
         var handler = CreateHandler();
 
-        var act = async () => await handler.HandleAsync(new OpenAccountCommand(Guid.NewGuid(), "Current"));
+        var act = async () => await handler.HandleAsync(new OpenAccountCommand("Current"));
 
         await act.Should().ThrowAsync<DomainOperationNotAllowedException>()
             .Where(ex => ex.Details.ToString()!.Contains("verified"));
@@ -83,15 +72,16 @@ public sealed class OpenAccountHandlerTests
     [InlineData("Other", AccountType.Current)]
     public async Task HandleAsync_MapsAccountType(string input, AccountType expected)
     {
-        var customer = Customer.Create("John", "john@test.com", "09123456789");
+        var userId = Guid.NewGuid();
+        var customer = Customer.Create(new FullName("John"), new Email("john@test.com"), new PhoneNumber("09123456789"), new CustomerId(userId));
         customer.Verify();
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(customer.Id.Value);
+        _currentUser.UserId.Returns(userId);
         _customers.GetByIdAsync(customer.Id, Arg.Any<CancellationToken>()).Returns(customer);
         Account? captured = null;
         _accounts.AddAsync(Arg.Do<Account>(a => captured = a), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var handler = CreateHandler();
-        await handler.HandleAsync(new OpenAccountCommand(Guid.NewGuid(), input));
+        await handler.HandleAsync(new OpenAccountCommand(input));
 
         captured!.AccountType.Should().Be(expected);
     }

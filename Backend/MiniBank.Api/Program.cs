@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using MiniBank.Api.Auth;
@@ -23,6 +24,7 @@ public class Program
 
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
+        builder.Services.AddTransient<IClaimsTransformation, UserRoleClaimsTransformation>();
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
@@ -51,7 +53,7 @@ public class Program
         app.UseDomainExceptionHandling();
         app.UseAuthentication();
         app.UseAuthorization();
-        app.MapIdentityApi<AppUser>();
+        app.MapIdentityApi<IdentityUser<Guid>>();
         app.MapControllers();
 
         app.Run();

@@ -4,6 +4,7 @@ using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
+using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Features.Accounts.Deposit;
 using NSubstitute;
@@ -20,7 +21,7 @@ public sealed class DepositHandlerTests
     private DepositHandler CreateHandler() => new(_accounts, _transactions, _currentUser, _uow);
 
     private static Account CreateOwnedAccount(Guid customerId) =>
-        Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(customerId), AccountType.Current);
+        Account.Open(new CustomerId(customerId), AccountType.Current);
 
     [Fact]
     public async Task HandleAsync_OwnedAccount_CreatesTransactionAndPersists()
@@ -28,7 +29,7 @@ public sealed class DepositHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateOwnedAccount(ownerId);
         _accounts.LoadAsync(new AccountId(account.Id.Value), Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var response = await handler.HandleAsync(new DepositCommand(account.Id.Value, 500m));
@@ -58,7 +59,7 @@ public sealed class DepositHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateOwnedAccount(ownerId);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(Guid.NewGuid()); // different user
+        _currentUser.UserId.Returns(Guid.NewGuid()); // different user
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new DepositCommand(account.Id.Value, 100m));
@@ -68,27 +69,13 @@ public sealed class DepositHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_UserWithoutCustomer_ThrowsForbidden()
-    {
-        var ownerId = Guid.NewGuid();
-        var account = CreateOwnedAccount(ownerId);
-        _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns((Guid?)null);
-
-        var handler = CreateHandler();
-        var act = async () => await handler.HandleAsync(new DepositCommand(account.Id.Value, 100m));
-
-        await act.Should().ThrowAsync<ForbiddenException>();
-    }
-
-    [Fact]
     public async Task HandleAsync_FrozenAccount_ThrowsOperationNotAllowed()
     {
         var ownerId = Guid.NewGuid();
         var account = CreateOwnedAccount(ownerId);
         account.Freeze();
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new DepositCommand(account.Id.Value, 100m));

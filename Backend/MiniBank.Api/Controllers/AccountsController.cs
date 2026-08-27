@@ -22,7 +22,7 @@ public sealed class AccountsController(IMediator mediator, ICurrentUserContext c
     public async Task<ActionResult<AccountResponse>> Open(
         [FromBody] OpenAccountRequest request, CancellationToken ct)
     {
-        var command = new OpenAccountCommand(currentUser.UserId, request.AccountType);
+        var command = new OpenAccountCommand(request.AccountType);
         var response = await mediator.SendAsync(command, ct);
         return CreatedAtAction(nameof(GetStatement), new { accountId = response.AccountId }, response);
     }

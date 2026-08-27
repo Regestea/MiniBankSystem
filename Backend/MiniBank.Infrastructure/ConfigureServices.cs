@@ -48,11 +48,11 @@ public static class ConfigureServices
         builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
         builder.Services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         builder.Services.AddScoped<ISqlConnectionFactory, NpgsqlConnectionFactory>();
-        builder.Services.AddScoped<IAppUserDirectory, AppUserDirectory>();
+        builder.Services.AddScoped<IIdentityUserService, IdentityUserService>();
         builder.Services.AddScoped<ExceptionMiddleware>();
         builder.Services.AddAuthorization();
-        builder.Services.AddIdentityApiEndpoints<AppUser>()
-                        .AddRoles<IdentityRole>()
+        builder.Services.AddIdentityApiEndpoints<IdentityUser<Guid>>()
+                        .AddRoles<IdentityRole<Guid>>()
                         .AddEntityFrameworkStores<MiniBankDbContext>();
         builder.Services.AddScoped<AdminSeeder>();
 

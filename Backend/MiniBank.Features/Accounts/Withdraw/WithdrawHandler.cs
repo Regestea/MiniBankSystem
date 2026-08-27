@@ -19,7 +19,7 @@ internal sealed class WithdrawHandler(
         var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.AccountId);
 
-        await AccountOwnership.EnsureOwnedByCallerAsync(account.CustomerId, currentUser);
+        AccountOwnership.EnsureOwnedByCaller(account.CustomerId, currentUser);
 
         var (tx, _) = account.Withdraw(Money.FromDecimal(command.Amount));
 

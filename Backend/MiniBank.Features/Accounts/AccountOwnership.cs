@@ -5,14 +5,12 @@ namespace MiniBank.Features.Accounts;
 
 internal static class AccountOwnership
 {
-    public static async Task EnsureOwnedByCallerAsync(
+    /// <summary>Ownership is a plain Guid comparison: customer id == identity user id.</summary>
+    public static void EnsureOwnedByCaller(
         Domain.CustomerAggregate.ValueObjects.CustomerId accountOwnerId,
         ICurrentUserContext currentUser)
     {
-        var callerCustomerId = await currentUser.GetCustomerIdAsync()
-            ?? throw new ForbiddenException("customer", "User has no linked customer profile.");
-
-        if (!accountOwnerId.Equals(callerCustomerId))
+        if (!accountOwnerId.Value.Equals(currentUser.UserId))
             throw new ForbiddenException("account", "Account is not owned by the current user.");
     }
 }

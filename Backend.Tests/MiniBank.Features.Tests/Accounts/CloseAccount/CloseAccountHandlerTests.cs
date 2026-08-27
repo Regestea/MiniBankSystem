@@ -5,6 +5,7 @@ using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.BuildingBlocks.ValueObjects;
+using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Features.Accounts.CloseAccount;
 using NSubstitute;
 
@@ -20,7 +21,7 @@ public sealed class CloseAccountHandlerTests
 
     private static Account CreateAccount(Guid ownerId, decimal balance = 0m, AccountStatus status = AccountStatus.Active)
     {
-        var acc = Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(ownerId), AccountType.Current);
+        var acc = Account.Open(new CustomerId(ownerId), AccountType.Current);
         if (balance > 0)
             acc.Deposit(Money.FromDecimal(balance));
         if (status == AccountStatus.Frozen) acc.Freeze();
@@ -33,7 +34,7 @@ public sealed class CloseAccountHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateAccount(ownerId, 0m);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var response = await handler.HandleAsync(new CloseAccountCommand(account.Id.Value));
@@ -59,7 +60,7 @@ public sealed class CloseAccountHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateAccount(ownerId);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(Guid.NewGuid());
+        _currentUser.UserId.Returns(Guid.NewGuid());
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new CloseAccountCommand(account.Id.Value));
@@ -72,7 +73,7 @@ public sealed class CloseAccountHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateAccount(ownerId, 100m);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new CloseAccountCommand(account.Id.Value));
@@ -86,7 +87,7 @@ public sealed class CloseAccountHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateAccount(ownerId, 0m, AccountStatus.Frozen);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new CloseAccountCommand(account.Id.Value));
@@ -101,7 +102,7 @@ public sealed class CloseAccountHandlerTests
         var account = CreateAccount(ownerId, 0m);
         account.Close();
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new CloseAccountCommand(account.Id.Value));

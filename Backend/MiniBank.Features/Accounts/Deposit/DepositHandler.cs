@@ -19,7 +19,7 @@ internal sealed class DepositHandler(
         var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.AccountId);
 
-        await AccountOwnership.EnsureOwnedByCallerAsync(account.CustomerId, currentUser);
+        AccountOwnership.EnsureOwnedByCaller(account.CustomerId, currentUser);
 
         var (tx, _) = account.Deposit(Money.FromDecimal(command.Amount));
 

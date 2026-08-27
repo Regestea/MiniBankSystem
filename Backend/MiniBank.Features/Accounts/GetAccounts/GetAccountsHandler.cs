@@ -15,9 +15,8 @@ internal sealed class GetAccountsHandler(ISqlConnectionFactory connectionFactory
                COALESCE(SUM(CASE WHEN e.type IN (0, 2) THEN e.amount ELSE -e.amount END), 0) AS balance,
                a.created_at
         FROM   accounts a
-        JOIN   "AspNetUsers" u ON u.customer_id = a.customer_id
         LEFT   JOIN ledger_entries e ON e.account_id = a.account_id
-        WHERE  u.Id = @UserId
+        WHERE  a.customer_id = @UserId
         GROUP  BY a.account_id, a.account_number, a.account_type, a.status, a.created_at
         ORDER  BY a.created_at;
         """;

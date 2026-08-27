@@ -54,8 +54,17 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         await using var ctx = CreateContext();
         // Order matters due to FKs: ledger_entries (owned) -> accounts -> transactions -> customers
+        // CASCADE handles owned ledger_entries; customers has no FK from AspNetUsers after 20260827 migration (same-Guid design)
         await ctx.Database.ExecuteSqlRawAsync(
             @"TRUNCATE TABLE ""ledger_entries"", ""transactions"", ""accounts"", ""customers"" CASCADE;");
+    }
+
+    /// <summary>Truncates both domain and Identity tables – use when testing Customer ↔ IdentityUser 1:1 Guid link.</summary>
+    public async Task ClearAllTablesAsync()
+    {
+        await using var ctx = CreateContext();
+        await ctx.Database.ExecuteSqlRawAsync(
+            @"TRUNCATE TABLE ""ledger_entries"", ""transactions"", ""accounts"", ""customers"", ""AspNetUsers"", ""AspNetRoles"", ""AspNetUserRoles"", ""AspNetUserClaims"", ""AspNetUserLogins"", ""AspNetRoleClaims"", ""AspNetUserTokens"" CASCADE;");
     }
 }
 

@@ -4,6 +4,7 @@ using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
+using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Features.Accounts.Withdraw;
 using NSubstitute;
@@ -21,7 +22,7 @@ public sealed class WithdrawHandlerTests
 
     private static Account CreateFundedAccount(Guid ownerId, decimal initialDeposit = 1000m)
     {
-        var acc = Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(ownerId), AccountType.Current);
+        var acc = Account.Open(new CustomerId(ownerId), AccountType.Current);
         acc.Deposit(MiniBank.Domain.BuildingBlocks.ValueObjects.Money.FromDecimal(initialDeposit));
         return acc;
     }
@@ -32,7 +33,7 @@ public sealed class WithdrawHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateFundedAccount(ownerId, 1000m);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var response = await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 400m));
@@ -49,7 +50,7 @@ public sealed class WithdrawHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateFundedAccount(ownerId, 200m);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(ownerId);
+        _currentUser.UserId.Returns(ownerId);
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 500m));
@@ -75,7 +76,7 @@ public sealed class WithdrawHandlerTests
         var ownerId = Guid.NewGuid();
         var account = CreateFundedAccount(ownerId);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
-        _currentUser.GetCustomerIdAsync(Arg.Any<CancellationToken>()).Returns(Guid.NewGuid());
+        _currentUser.UserId.Returns(Guid.NewGuid());
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 100m));

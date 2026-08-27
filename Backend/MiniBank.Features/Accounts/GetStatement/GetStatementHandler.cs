@@ -12,10 +12,8 @@ internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactor
         SELECT a.account_id, a.account_number, a.status,
                COALESCE(SUM(CASE WHEN e.type IN (0, 2) THEN e.amount ELSE -e.amount END), 0) AS balance
         FROM   accounts a
-        JOIN   customers c      ON c.customer_id = a.customer_id
-        JOIN   "AspNetUsers" u  ON u.customer_id  = c.customer_id
         LEFT   JOIN ledger_entries e ON e.account_id = a.account_id
-        WHERE  a.account_id = @AccountId AND u.Id = @RequesterUserId
+        WHERE  a.account_id = @AccountId AND a.customer_id = @RequesterUserId
         GROUP  BY a.account_id, a.account_number, a.status
         """;
 

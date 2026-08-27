@@ -5,10 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace MiniBank.Infrastructure.Identity;
 
-/// <summary>Seeds Admin role and admin user from configuration.</summary>
+/// <summary>Seeds Admin role and admin user from configuration using Guid Identity.</summary>
 public sealed class AdminSeeder(
-    RoleManager<IdentityRole> roleManager,
-    UserManager<AppUser> userManager,
+    RoleManager<IdentityRole<Guid>> roleManager,
+    UserManager<IdentityUser<Guid>> userManager,
     ILogger<AdminSeeder> logger,
     IConfiguration configuration)
 {
@@ -21,7 +21,7 @@ public sealed class AdminSeeder(
         {
             if (!await roleManager.RoleExistsAsync(role))
             {
-                await roleManager.CreateAsync(new IdentityRole(role));
+                await roleManager.CreateAsync(new IdentityRole<Guid>(role));
                 logger.LogInformation("Created role '{Role}'.", role);
             }
         }
@@ -36,7 +36,7 @@ public sealed class AdminSeeder(
         if (await userManager.FindByEmailAsync(email) is not null)
             return; // already seeded
 
-        var admin = new AppUser { UserName = email, Email = email, EmailConfirmed = true };
+        var admin = new IdentityUser<Guid> { UserName = email, Email = email, EmailConfirmed = true };
         var result = await userManager.CreateAsync(admin, password);
 
         if (result.Succeeded)
