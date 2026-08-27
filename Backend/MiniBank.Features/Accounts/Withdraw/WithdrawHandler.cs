@@ -14,14 +14,13 @@ internal sealed class WithdrawHandler(
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<WithdrawCommand, TransactionResponse>
 {
-    public async Task<TransactionResponse> Handle(WithdrawCommand command, CancellationToken cancellationToken = default)
+    public async Task<TransactionResponse> HandleAsync(WithdrawCommand command, CancellationToken cancellationToken = default)
     {
         var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.AccountId);
 
         await AccountOwnership.EnsureOwnedByCallerAsync(account.CustomerId, currentUser);
 
-        // Insufficient funds / frozen account → DomainInvariantViolation(422) / OperationNotAllowed(405)
         var (tx, _) = account.Withdraw(Money.FromDecimal(command.Amount));
 
         await transactions.AddAsync(tx, cancellationToken);

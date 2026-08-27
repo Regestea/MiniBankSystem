@@ -4,11 +4,7 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Accounts.GetStatement;
 
-/// <summary>
-/// Read side (Dapper). Ownership is enforced in SQL itself: the account must belong
-/// to a customer linked to the requesting user — otherwise zero rows → 403/404.
-/// Balance = SUM over ordered postings (Deposit/TransferIn +, Withdraw/TransferOut −).
-/// </summary>
+/// <summary>Statement query — Dapper read side.</summary>
 internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactory)
     : IQueryHandler<GetStatementQuery, StatementResponse>
 {
@@ -27,10 +23,10 @@ internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactor
         SELECT ledger_entry_id, type, amount, occurred_on, reference_id, description
         FROM   ledger_entries
         WHERE  account_id = @AccountId
-        ORDER  BY occurred_on, ledger_entry_id          -- ★ deterministic banking order
+        ORDER  BY occurred_on, ledger_entry_id
         """;
 
-    public async Task<StatementResponse> Handle(GetStatementQuery query, CancellationToken cancellationToken = default)
+    public async Task<StatementResponse> HandleAsync(GetStatementQuery query, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateOpenConnection();
 
@@ -40,7 +36,6 @@ internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactor
 
         if (account is null)
         {
-            // distinguish "not yours" from "not found" without leaking information? keep 404 for both.
             var exists = await connection.ExecuteScalarAsync<bool>(
                 new CommandDefinition("SELECT COUNT(1) FROM accounts WHERE account_id = @AccountId",
                     new { query.AccountId }, cancellationToken: cancellationToken));

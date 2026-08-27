@@ -9,12 +9,12 @@ internal sealed class UnfreezeAccountHandler(
     IAccountRepository accounts,
     IUnitOfWork unitOfWork) : ICommandHandler<UnfreezeAccountCommand, AccountStatusResponse>
 {
-    public async Task<AccountStatusResponse> Handle(UnfreezeAccountCommand command, CancellationToken cancellationToken = default)
+    public async Task<AccountStatusResponse> HandleAsync(UnfreezeAccountCommand command, CancellationToken cancellationToken = default)
     {
         var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.AccountId);
 
-        account.Unfreeze(); // raises AccountUnfrozenEvent — transactions allowed again
+        account.Unfreeze();
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

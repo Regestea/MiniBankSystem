@@ -4,8 +4,6 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Accounts.GetAccounts;
 
-// Read side — Dapper: accounts of the logged-in user with derived balance
-// Filter is automatic for User role (my accounts). Admin calling same endpoint sees own accounts only.
 internal sealed class GetAccountsHandler(ISqlConnectionFactory connectionFactory)
     : IQueryHandler<GetAccountsQuery, IReadOnlyList<AccountDto>>
 {
@@ -24,7 +22,7 @@ internal sealed class GetAccountsHandler(ISqlConnectionFactory connectionFactory
         ORDER  BY a.created_at;
         """;
 
-    public async Task<IReadOnlyList<AccountDto>> Handle(GetAccountsQuery query, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AccountDto>> HandleAsync(GetAccountsQuery query, CancellationToken cancellationToken = default)
     {
         using var connection = connectionFactory.CreateOpenConnection();
 

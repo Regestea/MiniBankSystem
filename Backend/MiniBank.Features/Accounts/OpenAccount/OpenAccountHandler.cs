@@ -13,9 +13,8 @@ internal sealed class OpenAccountHandler(
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<OpenAccountCommand, AccountResponse>
 {
-    public async Task<AccountResponse> Handle(OpenAccountCommand command, CancellationToken cancellationToken = default)
+    public async Task<AccountResponse> HandleAsync(OpenAccountCommand command, CancellationToken cancellationToken = default)
     {
-        // Banking rule: only Verified customers may open accounts
         var callerCustomerId = await currentUser.GetCustomerIdAsync(cancellationToken)
             ?? throw new ForbiddenException("customer", "User has no linked customer profile.");
 
@@ -30,7 +29,7 @@ internal sealed class OpenAccountHandler(
             ? AccountType.Savings
             : AccountType.Current;
 
-        var account = Account.Open(customer.Id, accountType); // raises AccountOpenedEvent, status Active
+        var account = Account.Open(customer.Id, accountType);
 
         await accounts.AddAsync(account, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

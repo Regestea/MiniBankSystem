@@ -14,7 +14,7 @@ internal sealed class DepositHandler(
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<DepositCommand, TransactionResponse>
 {
-    public async Task<TransactionResponse> Handle(DepositCommand command, CancellationToken cancellationToken = default)
+    public async Task<TransactionResponse> HandleAsync(DepositCommand command, CancellationToken cancellationToken = default)
     {
         var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.AccountId);
@@ -23,8 +23,8 @@ internal sealed class DepositHandler(
 
         var (tx, _) = account.Deposit(Money.FromDecimal(command.Amount));
 
-        await transactions.AddAsync(tx, cancellationToken);   // journal
-        await unitOfWork.SaveChangesAsync(cancellationToken); // account.ledger_entries + transactions atomically
+        await transactions.AddAsync(tx, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new TransactionResponse(tx.Id.Value, tx.Type.ToString(), tx.Amount.Amount,
                                        tx.ReferenceId, tx.OccurredOn);

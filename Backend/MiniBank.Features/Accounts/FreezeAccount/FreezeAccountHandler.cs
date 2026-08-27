@@ -9,12 +9,12 @@ internal sealed class FreezeAccountHandler(
     IAccountRepository accounts,
     IUnitOfWork unitOfWork) : ICommandHandler<FreezeAccountCommand, AccountStatusResponse>
 {
-    public async Task<AccountStatusResponse> Handle(FreezeAccountCommand command, CancellationToken cancellationToken = default)
+    public async Task<AccountStatusResponse> HandleAsync(FreezeAccountCommand command, CancellationToken cancellationToken = default)
     {
         var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.AccountId);
 
-        account.Freeze(); // raises AccountFrozenEvent — new transactions will be rejected
+        account.Freeze();
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -11,14 +11,14 @@ internal sealed class CloseAccountHandler(
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<CloseAccountCommand, CloseAccountResponse>
 {
-    public async Task<CloseAccountResponse> Handle(CloseAccountCommand command, CancellationToken cancellationToken = default)
+    public async Task<CloseAccountResponse> HandleAsync(CloseAccountCommand command, CancellationToken cancellationToken = default)
     {
         var account = await accounts.LoadAsync(command.AccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.AccountId);
 
         await AccountOwnership.EnsureOwnedByCallerAsync(account.CustomerId, currentUser);
 
-        account.Close(); // domain guards: not Frozen, zero balance
+        account.Close();
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
