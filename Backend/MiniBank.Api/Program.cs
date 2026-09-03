@@ -18,9 +18,16 @@ public class Program
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        // Keep Console/Debug/OpenTelemetry only — the default EventLog provider crashes
+        // when the Windows Event Log service is unavailable (CI, containers, restricted hosts).
+        builder.Logging.ClearProviders();
+        builder.Logging.AddConsole();
+        builder.Logging.AddDebug();
+
         builder.AddServiceDefaults();
         builder.AddInfrastructureServices(builder.Configuration);
-        builder.AddFeatureServices();
+        builder.Services.AddFeatureServices();
 
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
@@ -32,10 +39,11 @@ public class Program
 
         app.MapDefaultEndpoints();
 
+        // Apply migrations on every startup (per plan); seeding only where configured.
+        await app.Services.MigrateDatabaseAsync();
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
-            await app.Services.MigrateDatabaseAsync();
             await using var scope = app.Services.CreateAsyncScope();
             var seeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
             await seeder.SeedAsync();
@@ -45,7 +53,7 @@ public class Program
                 options.WithTitle("MiniBank API")
                     .WithTheme(ScalarTheme.DeepSpace)
                     .WithDefaultHttpClient(ScalarTarget.JavaScript, ScalarClient.Fetch)
-                    .WithPersistentAuthentication();
+                    .EnablePersistentAuthentication();
             });
         }
 
@@ -53,7 +61,10 @@ public class Program
         app.UseDomainExceptionHandling();
         app.UseAuthentication();
         app.UseAuthorization();
-        app.MapIdentityApi<IdentityUser<Guid>>();
+
+        // Identity endpoints (login/refresh/2fa/forgot/reset/...) with /register disabled —
+        // registration goes through POST /customers (atomic IdentityUser + Customer).
+        app.MapIdentityApiWithRegistrationGuard<IdentityUser<Guid>>();
         app.MapControllers();
 
         app.Run();
