@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiniBank.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(MiniBankDbContext))]
-    [Migration("20260827163341_Identity_Guid_And_Remove_Orphan")]
-    partial class Identity_Guid_And_Remove_Orphan
+    [Migration("20260902173357_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
