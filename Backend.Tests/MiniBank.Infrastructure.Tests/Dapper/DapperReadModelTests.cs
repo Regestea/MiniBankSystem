@@ -25,6 +25,7 @@ public sealed class DapperReadModelTests
         var customer = Customer.Create("Dapper User", email, "09123456789");
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             await ctx.Customers.AddAsync(customer);
             await ctx.SaveChangesAsync();
         }
@@ -53,6 +54,8 @@ public sealed class DapperReadModelTests
 
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
+            await _fixture.SeedIdentityUserAsync(otherCustomer.Id.Value, otherCustomer.Email);
             await ctx.Customers.AddRangeAsync(customer, otherCustomer);
             await ctx.Accounts.AddRangeAsync(account, otherAccount);
             await ctx.SaveChangesAsync();
@@ -80,6 +83,7 @@ public sealed class DapperReadModelTests
         account.Deposit(Money.FromDecimal(100m));
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             await ctx.Customers.AddAsync(customer);
             await ctx.Accounts.AddAsync(account);
             await ctx.SaveChangesAsync();
@@ -111,6 +115,7 @@ public sealed class DapperReadModelTests
 
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             await ctx.Customers.AddAsync(customer);
             await ctx.Accounts.AddAsync(account);
             await ctx.SaveChangesAsync();
@@ -144,6 +149,8 @@ public sealed class DapperReadModelTests
 
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customerA.Id.Value, customerA.Email);
+            await _fixture.SeedIdentityUserAsync(customerB.Id.Value, customerB.Email);
             await ctx.Customers.AddRangeAsync(customerA, customerB);
             await ctx.Accounts.AddRangeAsync(accountA1, accountA2, accountB);
             await ctx.SaveChangesAsync();
@@ -192,6 +199,8 @@ public sealed class DapperReadModelTests
 
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(owner.Id.Value, owner.Email);
+            await _fixture.SeedIdentityUserAsync(stranger.Id.Value, stranger.Email);
             await ctx.Customers.AddRangeAsync(owner, stranger);
             await ctx.Accounts.AddAsync(account);
             await ctx.SaveChangesAsync();
@@ -227,10 +236,7 @@ public sealed class DapperReadModelTests
 
         await using (var ctx = _fixture.CreateContext())
         {
-            await ctx.Customers.AddAsync(customer);
-            await ctx.SaveChangesAsync();
-
-            // Insert IdentityUser with same Guid via raw context (simulates IdentityUser<Guid>)
+            // Insert IdentityUser first (FK fk_customers_aspnet_user), then the Customer with the same Guid
             var user = new Microsoft.AspNetCore.Identity.IdentityUser<Guid>
             {
                 Id = sharedId,
@@ -241,6 +247,9 @@ public sealed class DapperReadModelTests
                 EmailConfirmed = true
             };
             ctx.Set<Microsoft.AspNetCore.Identity.IdentityUser<Guid>>().Add(user);
+            await ctx.SaveChangesAsync();
+
+            await ctx.Customers.AddAsync(customer);
             await ctx.SaveChangesAsync();
         }
 

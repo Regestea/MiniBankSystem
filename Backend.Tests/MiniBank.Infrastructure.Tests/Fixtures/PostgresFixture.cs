@@ -54,9 +54,21 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         await using var ctx = CreateContext();
         // Order matters due to FKs: ledger_entries (owned) -> accounts -> transactions -> customers
-        // CASCADE handles owned ledger_entries; customers has no FK from AspNetUsers after 20260827 migration (same-Guid design)
         await ctx.Database.ExecuteSqlRawAsync(
             @"TRUNCATE TABLE ""ledger_entries"", ""transactions"", ""accounts"", ""customers"" CASCADE;");
+    }
+
+    /// <summary>
+    /// Creates the IdentityUser row required by fk_customers_aspnet_user before a Customer
+    /// with the same Guid can be inserted (same-Guid design).
+    /// </summary>
+    public async Task SeedIdentityUserAsync(Guid userId, string email)
+    {
+        await using var ctx = CreateContext();
+        await ctx.Database.ExecuteSqlRawAsync(
+            @"INSERT INTO ""AspNetUsers"" (""Id"", ""UserName"", ""NormalizedUserName"", ""Email"", ""NormalizedEmail"", ""EmailConfirmed"", ""PasswordHash"", ""SecurityStamp"", ""ConcurrencyStamp"", ""PhoneNumberConfirmed"", ""TwoFactorEnabled"", ""LockoutEnabled"", ""AccessFailedCount"")
+              VALUES ({0}, {1}, {2}, {1}, {2}, true, '', {3}, {3}, false, false, false, 0)",
+            userId, email, email.ToUpperInvariant(), Guid.NewGuid().ToString());
     }
 
     /// <summary>Truncates both domain and Identity tables – use when testing Customer ↔ IdentityUser 1:1 Guid link.</summary>

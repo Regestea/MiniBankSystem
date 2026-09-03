@@ -18,6 +18,7 @@ public sealed class AccountRepositoryTests
     {
         var customer = Customer.Create("Alice Smith", $"cust_{Guid.NewGuid():N}@test.com", "09123456789");
         await using var ctx = _fixture.CreateContext();
+        await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
         await ctx.Customers.AddAsync(customer);
         await ctx.SaveChangesAsync();
         return customer;

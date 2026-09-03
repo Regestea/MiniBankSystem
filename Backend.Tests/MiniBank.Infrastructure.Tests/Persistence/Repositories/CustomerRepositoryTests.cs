@@ -22,6 +22,7 @@ public sealed class CustomerRepositoryTests
         var customer = Customer.Create("Alice Smith", $"alice_{Guid.NewGuid():N}@test.com", "09123456789");
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             await ctx.Customers.AddAsync(customer);
             await ctx.SaveChangesAsync();
         }
@@ -46,6 +47,7 @@ public sealed class CustomerRepositoryTests
         var customer = Customer.Create("Bob", email, "09123456789");
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             await ctx.Customers.AddAsync(customer);
             await ctx.SaveChangesAsync();
         }
@@ -72,6 +74,7 @@ public sealed class CustomerRepositoryTests
 
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(c1.Id.Value, c1.Email);
             await ctx.Customers.AddAsync(c1);
             await ctx.SaveChangesAsync();
         }
@@ -93,6 +96,7 @@ public sealed class CustomerRepositoryTests
         // Verify FullName, Email, PhoneNumber are value objects with conversions: CustomerConfiguration:16-32
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             await ctx.Customers.AddAsync(customer);
             await ctx.SaveChangesAsync();
         }
@@ -116,6 +120,7 @@ public sealed class CustomerRepositoryTests
         var customer = Customer.Create("Dana", $"dana_{Guid.NewGuid():N}@test.com", "09123456789");
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             await ctx.Customers.AddAsync(customer);
             await ctx.SaveChangesAsync();
         }

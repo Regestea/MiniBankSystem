@@ -11,7 +11,7 @@ public sealed class NpgsqlConnectionFactoryTests
     public NpgsqlConnectionFactoryTests(PostgresFixture fixture) => _fixture = fixture;
 
     [Fact]
-    public void CreateOpenConnection_Returns_Open_NpgsqlConnection_To_Same_Database_As_EfCore()
+    public async Task CreateOpenConnection_Returns_Open_NpgsqlConnection_To_Same_Database_As_EfCore()
     {
         var factory = new NpgsqlConnectionFactory(_fixture.Configuration);
 
@@ -25,6 +25,7 @@ public sealed class NpgsqlConnectionFactoryTests
         var customer = MiniBank.Domain.CustomerAggregate.Customer.Create("Factory User", $"factory_{Guid.NewGuid():N}@test.com", "09123456789");
         using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
             ctx.Customers.Add(customer);
             ctx.SaveChanges();
         }

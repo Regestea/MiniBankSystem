@@ -22,6 +22,7 @@ public sealed class TransactionRepositoryTests
         if (balance > 0) account.Deposit(Money.FromDecimal(balance));
 
         await using var ctx = _fixture.CreateContext();
+        await _fixture.SeedIdentityUserAsync(customer.Id.Value, customer.Email);
         await ctx.Customers.AddAsync(customer);
         await ctx.Accounts.AddAsync(account);
         await ctx.SaveChangesAsync();
@@ -59,6 +60,7 @@ public sealed class TransactionRepositoryTests
         var to = Account.Open(toCustomer.Id, AccountType.Current);
         await using (var ctx = _fixture.CreateContext())
         {
+            await _fixture.SeedIdentityUserAsync(toCustomer.Id.Value, toCustomer.Email);
             await ctx.Customers.AddAsync(toCustomer);
             await ctx.Accounts.AddAsync(to);
             await ctx.SaveChangesAsync();
