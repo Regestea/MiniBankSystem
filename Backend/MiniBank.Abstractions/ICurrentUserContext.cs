@@ -11,4 +11,7 @@ public interface ICurrentUserContext
 
     /// <summary>Caller email from token claims, if present.</summary>
     string? Email { get; }
+
+    /// <summary>True when the caller carries the "Admin" role claim. Lets handlers bypass ownership checks.</summary>
+    bool IsAdmin { get; }
 }

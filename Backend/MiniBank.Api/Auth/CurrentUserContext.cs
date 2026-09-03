@@ -8,6 +8,7 @@ internal sealed class CurrentUserContext(IHttpContextAccessor httpContextAccesso
 {
     private Guid? _userId;
     private string? _email;
+    private bool? _isAdmin;
 
     public Guid UserId
     {
@@ -41,6 +42,21 @@ internal sealed class CurrentUserContext(IHttpContextAccessor httpContextAccesso
             _email = principal.FindFirstValue(ClaimTypes.Email)
                      ?? principal.FindFirstValue("email");
             return _email;
+        }
+    }
+
+    public bool IsAdmin
+    {
+        get
+        {
+            if (_isAdmin.HasValue)
+                return _isAdmin.Value;
+
+            var principal = httpContextAccessor.HttpContext?.User
+                ?? throw new UnauthorizedAccessException("No HTTP context.");
+
+            _isAdmin = principal.IsInRole("Admin");
+            return _isAdmin.Value;
         }
     }
 }
