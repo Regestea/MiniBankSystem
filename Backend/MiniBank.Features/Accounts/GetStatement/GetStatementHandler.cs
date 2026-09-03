@@ -1,16 +1,22 @@
 using Dapper;
 using MiniBank.Abstractions;
+using MiniBank.Domain.AccountAggregate;
+using MiniBank.Domain.Ledger;
 using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Accounts.GetStatement;
 
 /// <summary>Statement query — Dapper read side.</summary>
-internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactory)
+internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactory, ICurrentUserContext currentUser)
     : IQueryHandler<GetStatementQuery, StatementResponse>
 {
+    // Credit types resolved from the enum (not hardcoded numbers) and passed as SQL parameters
+    private static readonly int[] CreditTypes =
+        [(int)LedgerEntryType.Deposit, (int)LedgerEntryType.TransferIn];
+
     private const string AccountSql = """
         SELECT a.account_id, a.account_number, a.status,
-               COALESCE(SUM(CASE WHEN e.type IN (0, 2) THEN e.amount ELSE -e.amount END), 0) AS balance
+               COALESCE(SUM(CASE WHEN e.type = ANY(@CreditTypes) THEN e.amount ELSE -e.amount END), 0) AS balance
         FROM   accounts a
         LEFT   JOIN ledger_entries e ON e.account_id = a.account_id
         WHERE  a.account_id = @AccountId AND a.customer_id = @RequesterUserId
@@ -22,14 +28,20 @@ internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactor
         FROM   ledger_entries
         WHERE  account_id = @AccountId
         ORDER  BY occurred_on, ledger_entry_id
+        OFFSET @Offset LIMIT @Limit;
+
+        SELECT COUNT(*) FROM ledger_entries WHERE account_id = @AccountId;
         """;
 
     public async Task<StatementResponse> HandleAsync(GetStatementQuery query, CancellationToken cancellationToken = default)
     {
+        var page = Math.Max(1, query.Page);
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+
         using var connection = connectionFactory.CreateOpenConnection();
 
         var account = await connection.QuerySingleOrDefaultAsync<AccountRow>(
-            new CommandDefinition(AccountSql, new { query.AccountId, query.RequesterUserId },
+            new CommandDefinition(AccountSql, new { query.AccountId, RequesterUserId = currentUser.UserId, CreditTypes },
                                   cancellationToken: cancellationToken));
 
         if (account is null)
@@ -43,21 +55,20 @@ internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactor
                 : new Domain.BuildingBlocks.Exceptions.NotFoundException("account", query.AccountId);
         }
 
-        var entries = (await connection.QueryAsync<StatementEntryDto>(
-            new CommandDefinition(EntriesSql, new { query.AccountId },
-                                  cancellationToken: cancellationToken))).ToList();
+        await using var multi = await connection.QueryMultipleAsync(new CommandDefinition(
+            EntriesSql,
+            new { query.AccountId, Offset = (page - 1) * pageSize, Limit = pageSize },
+            cancellationToken: cancellationToken));
 
-        return new StatementResponse(query.AccountId, account.AccountNumber, MapStatus(account.Status),
-                                     account.Balance, entries);
+        var entries = (await multi.ReadAsync<StatementEntryDto>()).ToList();
+        var total = await multi.ReadSingleAsync<int>();
+
+        // Status mapped via the domain enum instead of hardcoded numbers
+        var status = ((AccountStatus)account.Status).ToString();
+
+        return new StatementResponse(query.AccountId, account.AccountNumber, status, account.Balance,
+                                     page, pageSize, total, entries);
     }
-
-    private static string MapStatus(short status) => status switch
-    {
-        0 => "Active",
-        1 => "Frozen",
-        2 => "Closed",
-        _ => status.ToString()
-    };
 
     private sealed record AccountRow(Guid AccountId, string AccountNumber, short Status, decimal Balance);
 }

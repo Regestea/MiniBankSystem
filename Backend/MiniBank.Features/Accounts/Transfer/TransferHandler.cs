@@ -11,6 +11,7 @@ namespace MiniBank.Features.Accounts.Transfer;
 /// <summary>Double-entry transfer between accounts.</summary>
 internal sealed class TransferHandler(
     IAccountRepository accounts,
+    ICustomerAccessGuard customerAccess,
     ITransactionRepository transactions,
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<TransferCommand, TransferResponse>
@@ -21,6 +22,8 @@ internal sealed class TransferHandler(
             ?? throw new NotFoundException("account", command.FromAccountId);
 
         AccountOwnership.EnsureOwnedByCaller(from.CustomerId, currentUser);
+        // Only the sender must be active; incoming money to a blocked customer's account is allowed (banking convention).
+        await customerAccess.EnsureNotBlockedAsync(from.CustomerId, cancellationToken);
 
         var to = await accounts.LoadAsync(command.ToAccountId, cancellationToken)
             ?? throw new NotFoundException("account", command.ToAccountId);

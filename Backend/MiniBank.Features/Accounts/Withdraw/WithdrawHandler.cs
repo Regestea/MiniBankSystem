@@ -10,6 +10,7 @@ namespace MiniBank.Features.Accounts.Withdraw;
 
 internal sealed class WithdrawHandler(
     IAccountRepository accounts,
+    ICustomerAccessGuard customerAccess,
     ITransactionRepository transactions,
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<WithdrawCommand, TransactionResponse>
@@ -20,6 +21,7 @@ internal sealed class WithdrawHandler(
             ?? throw new NotFoundException("account", command.AccountId);
 
         AccountOwnership.EnsureOwnedByCaller(account.CustomerId, currentUser);
+        await customerAccess.EnsureNotBlockedAsync(account.CustomerId, cancellationToken);
 
         var (tx, _) = account.Withdraw(Money.FromDecimal(command.Amount));
 

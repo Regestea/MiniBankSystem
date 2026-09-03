@@ -2,7 +2,7 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Accounts.GetAccounts;
 
-public sealed record GetAccountsQuery(Guid UserId) : IQuery<IReadOnlyList<AccountDto>>;
+public sealed record GetAccountsQuery : IQuery<IReadOnlyList<AccountDto>>;
 
 public sealed record AccountDto(
     Guid AccountId,

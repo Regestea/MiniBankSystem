@@ -10,6 +10,7 @@ namespace MiniBank.Features.Accounts.Deposit;
 
 internal sealed class DepositHandler(
     IAccountRepository accounts,
+    ICustomerAccessGuard customerAccess,
     ITransactionRepository transactions,
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<DepositCommand, TransactionResponse>
@@ -20,6 +21,7 @@ internal sealed class DepositHandler(
             ?? throw new NotFoundException("account", command.AccountId);
 
         AccountOwnership.EnsureOwnedByCaller(account.CustomerId, currentUser);
+        await customerAccess.EnsureNotBlockedAsync(account.CustomerId, cancellationToken);
 
         var (tx, _) = account.Deposit(Money.FromDecimal(command.Amount));
 

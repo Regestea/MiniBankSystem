@@ -8,6 +8,7 @@ namespace MiniBank.Features.Accounts.CloseAccount;
 
 internal sealed class CloseAccountHandler(
     IAccountRepository accounts,
+    ICustomerAccessGuard customerAccess,
     ICurrentUserContext currentUser,
     IUnitOfWork unitOfWork) : ICommandHandler<CloseAccountCommand, CloseAccountResponse>
 {
@@ -17,6 +18,7 @@ internal sealed class CloseAccountHandler(
             ?? throw new NotFoundException("account", command.AccountId);
 
         AccountOwnership.EnsureOwnedByCaller(account.CustomerId, currentUser);
+        await customerAccess.EnsureNotBlockedAsync(account.CustomerId, cancellationToken);
 
         account.Close();
 
