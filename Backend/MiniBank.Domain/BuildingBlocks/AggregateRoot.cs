@@ -1,6 +1,6 @@
 namespace MiniBank.Domain.BuildingBlocks;
 
-public abstract class AggregateRoot<TId> : Entity<TId>
+public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
     where TId : notnull
 {
     public int Version { get; protected set; }
