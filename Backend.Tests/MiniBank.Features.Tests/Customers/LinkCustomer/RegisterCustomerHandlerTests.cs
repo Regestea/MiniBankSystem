@@ -74,18 +74,54 @@ public sealed class RegisterCustomerHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_IdentityCreateFails_ThrowsInvalidOperation()
+    public async Task HandleAsync_IdentityDuplicateEmail_ThrowsConflict()
     {
         _customers.EmailExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
         _identity.CreateUserAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("Failed to create user."));
+            .ThrowsAsync(new DomainConflictException("email", "Email already registered."));
+
+        var handler = CreateHandler();
+        var act = async () => await handler.HandleAsync(
+            new RegisterCustomerCommand("dup@identity.com", "P@ssw0rd1", "John", "09123456789"));
+
+        await act.Should().ThrowAsync<DomainConflictException>();
+        await _customers.DidNotReceive().AddAsync(Arg.Any<Customer>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_IdentityCreateFails_ThrowsDomainException()
+    {
+        _customers.EmailExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        _identity.CreateUserAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DomainOperationNotAllowedException("user", "Password policy violated."));
 
         var handler = CreateHandler();
         var act = async () => await handler.HandleAsync(
             new RegisterCustomerCommand("user@test.com", "P@ssw0rd1", "John", "09123456789"));
 
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await act.Should().ThrowAsync<DomainOperationNotAllowedException>();
         await _customers.DidNotReceive().AddAsync(Arg.Any<Customer>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_RoleAssignment_Happens_After_AtomicSave()
+    {
+        _customers.EmailExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        _identity.CreateUserAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _identity.EnsureUserRoleAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var handler = CreateHandler();
+        await handler.HandleAsync(
+            new RegisterCustomerCommand("user@test.com", "P@ssw0rd1", "John", "09123456789"));
+
+        Received.InOrder(async () =>
+        {
+            await _identity.CreateUserAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            await _uow.SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _identity.EnsureUserRoleAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        });
     }
 
     [Fact]

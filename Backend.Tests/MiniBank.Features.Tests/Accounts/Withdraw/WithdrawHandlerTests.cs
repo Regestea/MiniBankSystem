@@ -7,6 +7,7 @@ using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Features.Accounts.Withdraw;
+using MiniBank.Features.Customers;
 using NSubstitute;
 
 namespace MiniBank.Features.Tests.Accounts.Withdraw;
@@ -18,7 +19,8 @@ public sealed class WithdrawHandlerTests
     private readonly ICurrentUserContext _currentUser = Substitute.For<ICurrentUserContext>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private WithdrawHandler CreateHandler() => new(_accounts, _transactions, _currentUser, _uow);
+    private readonly ICustomerAccessGuard _customerAccess = Substitute.For<ICustomerAccessGuard>();
+    private WithdrawHandler CreateHandler() => new(_accounts, _customerAccess, _transactions, _currentUser, _uow);
 
     private static Account CreateFundedAccount(Guid ownerId, decimal initialDeposit = 1000m)
     {

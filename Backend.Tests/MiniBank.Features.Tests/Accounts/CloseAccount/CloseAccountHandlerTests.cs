@@ -7,6 +7,7 @@ using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.BuildingBlocks.ValueObjects;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Features.Accounts.CloseAccount;
+using MiniBank.Features.Customers;
 using NSubstitute;
 
 namespace MiniBank.Features.Tests.Accounts.CloseAccount;
@@ -17,7 +18,8 @@ public sealed class CloseAccountHandlerTests
     private readonly ICurrentUserContext _currentUser = Substitute.For<ICurrentUserContext>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
 
-    private CloseAccountHandler CreateHandler() => new(_accounts, _currentUser, _uow);
+    private readonly ICustomerAccessGuard _customerAccess = Substitute.For<ICustomerAccessGuard>();
+    private CloseAccountHandler CreateHandler() => new(_accounts, _customerAccess, _currentUser, _uow);
 
     private static Account CreateAccount(Guid ownerId, decimal balance = 0m, AccountStatus status = AccountStatus.Active)
     {
