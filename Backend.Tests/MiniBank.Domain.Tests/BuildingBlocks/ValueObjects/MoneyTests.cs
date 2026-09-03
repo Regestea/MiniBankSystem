@@ -58,9 +58,9 @@ public class MoneyTests
     [Fact]
     public void Add_UsingOperator_SumsAmounts()
     {
-        Money a = 100m;
-        Money b = 50m;
-        Money result = a + b;
+        var a = Money.FromDecimal(100m);
+        var b = Money.FromDecimal(50m);
+        var result = a + b;
         Assert.Equal(150m, result.Amount);
     }
 
@@ -84,9 +84,9 @@ public class MoneyTests
     [Fact]
     public void Subtract_UsingOperator_SubtractsAmounts()
     {
-        Money a = 100m;
-        Money b = 30m;
-        Money result = a - b;
+        var a = Money.FromDecimal(100m);
+        var b = Money.FromDecimal(30m);
+        var result = a - b;
         Assert.Equal(70m, result.Amount);
     }
 
@@ -112,17 +112,17 @@ public class MoneyTests
     }
 
     [Fact]
-    public void ImplicitConversion_FromDecimal_CreatesMoney()
+    public void FromDecimal_CreatesMoney()
     {
-        Money money = 123.45m;
+        var money = Money.FromDecimal(123.45m);
         Assert.Equal(123.45m, money.Amount);
     }
 
     [Fact]
-    public void ImplicitConversion_ToDecimal_ReturnsAmount()
+    public void Amount_Property_ReturnsValue()
     {
         var money = Money.FromDecimal(99.99m);
-        decimal amount = money;
+        decimal amount = money.Amount;
         Assert.Equal(99.99m, amount);
     }
 

@@ -109,9 +109,9 @@ public class TransactionTests
         Assert.Equal(tx.OccurredOn, toEntry.OccurredOn);
         // Not same Id
         Assert.NotEqual(fromEntry.Id, toEntry.Id);
-        // Domain events
+        // Domain events — MoneyTransferredEvent is emitted by Account.TransferTo (not duplicated here)
         Assert.Contains(tx.DomainEvents, e => e is TransactionCreatedEvent);
-        Assert.Contains(tx.DomainEvents, e => e is MiniBank.Domain.TransactionAggregate.Events.MoneyTransferredEvent);
+        Assert.DoesNotContain(tx.DomainEvents, e => e is MiniBank.Domain.TransactionAggregate.Events.MoneyTransferredEvent);
     }
 
     [Fact]
