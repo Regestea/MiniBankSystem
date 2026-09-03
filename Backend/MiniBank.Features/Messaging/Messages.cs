@@ -4,7 +4,7 @@ namespace MiniBank.Features.Messaging;
 public interface IRequest;
 
 /// <summary>Request with typed response.</summary>
-public interface IRequest<out TResponse>;
+public interface IRequest<out TResponse> : IRequest;
 
 /// <summary>Fan-out notification — 0..N handlers.</summary>
 public interface INotification;

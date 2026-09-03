@@ -16,6 +16,7 @@
     <InternalsVisibleTo Include="MiniBank.Domain.Tests" />
     <InternalsVisibleTo Include="MiniBank.Features.Tests" />
     <InternalsVisibleTo Include="MiniBank.Infrastructure.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
   <ItemGroup>

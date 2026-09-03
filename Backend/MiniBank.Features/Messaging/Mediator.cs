@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Linq.Expressions;
+using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -7,7 +9,8 @@ namespace MiniBank.Features.Messaging;
 /// <summary>Lightweight mediator — resolves handlers, runs validators, fans out notifications.</summary>
 internal sealed class Mediator(IServiceProvider serviceProvider) : IMediator
 {
-    private static readonly ConcurrentDictionary<Type, Type> HandlerTypes = new();
+    private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, object, CancellationToken, Task<object>>> ResponseDispatchers = new();
+    private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, object, CancellationToken, Task>> VoidDispatchers = new();
 
     public async Task SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken = default)
         where TRequest : IRequest
@@ -17,10 +20,21 @@ internal sealed class Mediator(IServiceProvider serviceProvider) : IMediator
 
         await ValidateAsync(request, cancellationToken).ConfigureAwait(false);
 
-        var handler = serviceProvider.GetService<IRequestHandler<TRequest>>();
-        HandlerNotFoundException.ThrowIfHandlerNull(handler, request.GetType().Name);
+        var dispatcher = VoidDispatchers.GetOrAdd(request.GetType(), requestType =>
+        {
+            var handlerType = typeof(IRequestHandler<>).MakeGenericType(requestType);
+            var handleMethod = handlerType.GetMethod("HandleAsync")
+                ?? throw new InvalidOperationException($"HandleAsync not found on '{handlerType.Name}'.");
 
-        await handler!.HandleAsync(request, cancellationToken).ConfigureAwait(false);
+            return (sp, req, ct) =>
+            {
+                var handler = sp.GetService(handlerType);
+                HandlerNotFoundException.ThrowIfHandlerNull(handler, requestType.Name);
+                return (Task)handleMethod.Invoke(handler!, [req, ct])!;
+            };
+        });
+
+        await dispatcher(serviceProvider, request, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
@@ -28,24 +42,43 @@ internal sealed class Mediator(IServiceProvider serviceProvider) : IMediator
         cancellationToken.ThrowIfCancellationRequested();
         ArgumentNullException.ThrowIfNull(request);
 
-        await ValidateAsync((object)request, cancellationToken).ConfigureAwait(false);
+        await ValidateAsync(request, cancellationToken).ConfigureAwait(false);
 
         var requestType = request.GetType();
 
-        if (!HandlerTypes.TryGetValue(requestType, out var handlerType))
+        var dispatcher = ResponseDispatchers.GetOrAdd(requestType, rt =>
         {
-            handlerType = typeof(IRequestHandler<,>).MakeGenericType(requestType, typeof(TResponse));
-            HandlerTypes.TryAdd(requestType, handlerType);
-        }
+            var handlerType = typeof(IRequestHandler<,>).MakeGenericType(rt, typeof(TResponse));
+            var handleMethod = handlerType.GetMethod("HandleAsync")
+                ?? throw new InvalidOperationException($"HandleAsync not found on '{handlerType.Name}'.");
 
-        var handler = serviceProvider.GetService(handlerType);
-        HandlerNotFoundException.ThrowIfHandlerNull(handler, requestType.Name);
+            // Compile (handler, request, ct) => (Task<TResponse>)handler.HandleAsync(request, ct)
+            var handlerParam = Expression.Parameter(typeof(object), "handler");
+            var requestParam = Expression.Parameter(typeof(object), "request");
+            var ctParam = Expression.Parameter(typeof(CancellationToken), "ct");
 
-        var method = handlerType.GetMethod("HandleAsync")
-            ?? throw new InvalidOperationException($"HandleAsync not found on '{handlerType.Name}'.");
+            var call = Expression.Call(
+                Expression.Convert(handlerParam, handlerType),
+                handleMethod,
+                Expression.Convert(requestParam, rt),
+                ctParam);
 
-        var task = (Task<TResponse>)method.Invoke(handler, new object[] { request, cancellationToken })!;
-        return await task.ConfigureAwait(false);
+            var lambda = Expression.Lambda<Func<object, object, CancellationToken, Task<object>>>(
+                Expression.Convert(call, typeof(object)),
+                handlerParam, requestParam, ctParam);
+
+            var compiled = lambda.Compile();
+
+            return (sp, req, ct) =>
+            {
+                var handler = sp.GetService(handlerType);
+                HandlerNotFoundException.ThrowIfHandlerNull(handler, rt.Name);
+                return compiled(handler!, req, ct);
+            };
+        });
+
+        var result = await dispatcher(serviceProvider, request, cancellationToken).ConfigureAwait(false);
+        return (TResponse)result;
     }
 
     public async Task PublishAsync<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
@@ -70,19 +103,6 @@ internal sealed class Mediator(IServiceProvider serviceProvider) : IMediator
 
     private async Task ValidateAsync<TRequest>(TRequest request, CancellationToken ct) where TRequest : IRequest
     {
-        var validators = serviceProvider.GetServices<IValidator<TRequest>>().ToList();
-        if (validators.Count == 0) return;
-
-        foreach (var validator in validators)
-        {
-            var result = await validator.ValidateAsync(new ValidationContext<TRequest>(request), ct).ConfigureAwait(false);
-            if (!result.IsValid)
-                throw new ValidationException(result.Errors);
-        }
-    }
-
-    private async Task ValidateAsync(object request, CancellationToken ct)
-    {
         var requestType = request.GetType();
         var validatorType = typeof(IValidator<>).MakeGenericType(requestType);
         var enumerableType = typeof(IEnumerable<>).MakeGenericType(validatorType);
@@ -90,27 +110,14 @@ internal sealed class Mediator(IServiceProvider serviceProvider) : IMediator
         var enumerable = serviceProvider.GetService(enumerableType) as System.Collections.IEnumerable;
         if (enumerable is null) return;
 
-        var hasAny = false;
         foreach (var validatorObj in enumerable)
         {
-            hasAny = true;
             if (validatorObj is IValidator validator)
             {
                 var context = new ValidationContext<object>(request);
                 var result = await validator.ValidateAsync(context, ct).ConfigureAwait(false);
                 if (!result.IsValid)
                     throw new ValidationException(result.Errors);
-            }
-        }
-
-        if (!hasAny)
-        {
-            var single = serviceProvider.GetService(validatorType) as IValidator;
-            if (single is not null)
-            {
-                var ctx = new ValidationContext<object>(request);
-                var r = await single.ValidateAsync(ctx, ct).ConfigureAwait(false);
-                if (!r.IsValid) throw new ValidationException(r.Errors);
             }
         }
     }
