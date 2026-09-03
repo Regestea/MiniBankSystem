@@ -5,6 +5,7 @@ using MiniBank.Domain.BuildingBlocks.ValueObjects;
 using MiniBank.Domain.Ledger;
 using MiniBank.Domain.TransactionAggregate.Events;
 using MiniBank.Domain.TransactionAggregate.ValueObjects;
+using Money = MiniBank.Domain.BuildingBlocks.ValueObjects.Money;
 
 namespace MiniBank.Domain.TransactionAggregate;
 
@@ -53,10 +54,8 @@ public sealed class Transaction : AggregateRoot<TransactionId>
 
         AddDomainEvent(new TransactionCreatedEvent(id, type.ToString(), amount, source?.ToString(), destination?.ToString()));
 
-        if (type == TransactionType.Transfer)
-        {
-            AddDomainEvent(new MoneyTransferredEvent(source!, destination!, amount, ReferenceId, _postings[0].Id, _postings[1].Id));
-        }
+        // NOTE: Transfer does NOT emit MoneyTransferredEvent here — Account.TransferTo already
+        // emits it once with the ledger entry ids. Emitting in both places would duplicate the event.
     }
 
     private static string? NormalizeReference(string? referenceId)

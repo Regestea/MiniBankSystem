@@ -48,8 +48,5 @@ public sealed record Money : IComparable<Money>
     public static bool operator >=(Money a, Money b) => a.Amount >= b.Amount;
     public static bool operator <=(Money a, Money b) => a.Amount <= b.Amount;
 
-    public static implicit operator decimal(Money money) => money.Amount;
-    public static implicit operator Money(decimal amount) => FromDecimal(amount);
-
     public override string ToString() => $"{Amount:F2} USD";
 }
