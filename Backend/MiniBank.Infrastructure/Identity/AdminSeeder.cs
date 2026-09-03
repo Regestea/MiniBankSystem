@@ -51,12 +51,4 @@ public sealed class AdminSeeder(
                 email, string.Join("; ", result.Errors.Select(e => e.Description)));
         }
     }
-
-    [Obsolete("Resolve via DI and call SeedAsync() instead.")]
-    public static async Task SeedAsync(IServiceProvider services, IConfiguration configuration)
-    {
-        await using var scope = services.CreateAsyncScope();
-        var seeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
-        await seeder.SeedAsync();
-    }
 }

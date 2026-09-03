@@ -1,6 +1,7 @@
 using System.Text.Json;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 
 namespace MiniBank.Infrastructure.Exceptions
@@ -22,6 +23,19 @@ namespace MiniBank.Infrastructure.Exceptions
                 {
                     ErrorCode = "validation_failed",
                     Errors = ex.Errors.Select(e => new { e.PropertyName, e.ErrorMessage })
+                };
+
+                await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            }
+            catch (DbUpdateConcurrencyException) // optimistic concurrency (Version token)
+            {
+                context.Response.StatusCode = StatusCodes.Status409Conflict;
+                context.Response.Headers["content-type"] = "application/json";
+
+                var response = new
+                {
+                    ErrorCode = "concurrency_conflict",
+                    Message = "The resource was modified by another operation. Please retry."
                 };
 
                 await context.Response.WriteAsync(JsonSerializer.Serialize(response));

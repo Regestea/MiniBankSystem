@@ -48,5 +48,9 @@ internal sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         b.Property(c => c.UpdatedAt).HasColumnName("updated_at");
 
         b.HasIndex(c => c.Email).IsUnique().HasDatabaseName("ux_customers_email");
+
+        // NOTE: FK customers.customer_id -> AspNetUsers.Id is added as a raw DEFERRABLE
+        // constraint in migration AddCustomerIdentityFk. An EF model relationship is not
+        // possible here because the typed CustomerId key cannot match the Guid principal key.
     }
 }

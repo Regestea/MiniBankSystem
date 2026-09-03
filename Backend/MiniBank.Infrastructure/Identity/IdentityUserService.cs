@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using MiniBank.Abstractions;
+using MiniBank.Domain.BuildingBlocks.Exceptions;
 
 namespace MiniBank.Infrastructure.Identity;
 
@@ -17,6 +18,9 @@ internal sealed class IdentityUserService(
 
     public async Task CreateUserAsync(Guid userId, string email, string password, CancellationToken cancellationToken = default)
     {
+        if (await userManager.FindByEmailAsync(email) is not null)
+            throw new DomainConflictException(nameof(email), "Email already registered.");
+
         var user = new IdentityUser<Guid>(userId.ToString())
         {
             Id = userId,
@@ -27,10 +31,21 @@ internal sealed class IdentityUserService(
 
         var result = await userManager.CreateAsync(user, password);
         if (!result.Succeeded)
-        {
-            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-            throw new InvalidOperationException($"Failed to create IdentityUser: {errors}");
-        }
+            throw ToDomainException(result);
+    }
+
+    /// <summary>Maps Identity errors to domain exceptions so the API returns 409/400 instead of 500.</summary>
+    private static DomainException ToDomainException(IdentityResult result)
+    {
+        var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+
+        if (result.Errors.Any(e => e.Code is "DuplicateUserName" or "DuplicateEmail" or "InvalidUserName"))
+            return new DomainConflictException("email", errors);
+
+        if (result.Errors.Any(e => e.Code.StartsWith("Password") || e.Code is "InvalidEmail"))
+            return new DomainValidationException("password", errors);
+
+        return new DomainOperationNotAllowedException("user", errors);
     }
 
     public async Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default)
