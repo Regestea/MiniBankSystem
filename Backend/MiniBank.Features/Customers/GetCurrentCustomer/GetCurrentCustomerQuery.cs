@@ -3,4 +3,4 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.GetCurrentCustomer;
 
-public sealed record GetCurrentCustomerQuery(Guid UserId) : IQuery<CustomerDetailResponse?>;
+public sealed record GetCurrentCustomerQuery : IQuery<CustomerDetailResponse?>;

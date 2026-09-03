@@ -1,5 +1,6 @@
 using Dapper;
 using MiniBank.Abstractions;
+using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.ListCustomers;
@@ -28,9 +29,17 @@ internal sealed class ListCustomersHandler(ISqlConnectionFactory connectionFacto
             new { Offset = (page - 1) * pageSize, Limit = pageSize },
             cancellationToken: cancellationToken));
 
-        var items = (await multi.ReadAsync<CustomerListItemResponse>()).ToList();
+        var items = (await multi.ReadAsync<ListItemRow>()).ToList();
         var total = await multi.ReadSingleAsync<int>();
 
-        return new CustomersPageResponse(items, page, pageSize, total);
+        var response = items.Select(r => new CustomerListItemResponse(
+                r.CustomerId, r.FullName, r.Email, r.PhoneNumber,
+                ((CustomerStatus)r.Status).ToString(), r.CreatedAt))
+            .ToList();
+
+        return new CustomersPageResponse(response, page, pageSize, total);
     }
+
+    private sealed record ListItemRow(
+        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTimeOffset CreatedAt);
 }

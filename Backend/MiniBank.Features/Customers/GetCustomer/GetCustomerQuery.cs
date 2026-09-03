@@ -9,5 +9,5 @@ public sealed record CustomerDetailResponse(
     string FullName,
     string Email,
     string PhoneNumber,
-    short Status,
+    string Status,
     DateTimeOffset CreatedAt);

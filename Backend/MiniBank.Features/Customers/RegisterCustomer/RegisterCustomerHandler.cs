@@ -36,11 +36,12 @@ internal sealed class RegisterCustomerHandler(
 
         await customers.AddAsync(customer, cancellationToken);
 
-        // Persist "User" role for future tokens
-        await identityUsers.EnsureUserRoleAsync(customerId.Value, cancellationToken);
-
         // Single SaveChangesAsync persists both IdentityUser + Customer atomically
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Non-critical: assign "User" role after the atomic save. If this fails the
+        // UserRoleClaimsTransformation still grants the implicit role on next sign-in.
+        await identityUsers.EnsureUserRoleAsync(customerId.Value, cancellationToken);
 
         return CustomerResponse.From(customer);
     }
