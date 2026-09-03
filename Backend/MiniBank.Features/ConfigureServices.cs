@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using MiniBank.Features.Customers;
 using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features;
@@ -7,12 +8,6 @@ namespace MiniBank.Features;
 /// <summary>Composition root for the application layer.</summary>
 public static class ConfigureServices
 {
-    public static TBuilder AddFeatureServices<TBuilder>(this TBuilder builder)
-    {
-        builder.AddFeatureServices();
-        return builder;
-    }
-
     /// <summary>Registers mediator, handlers and validators.</summary>
     public static IServiceCollection AddFeatureServices(this IServiceCollection services)
     {
@@ -20,6 +15,7 @@ public static class ConfigureServices
         services.AddScoped<IMediator>(sp => sp.GetRequiredService<Mediator>());
         services.AddScoped<ISender>(sp => sp.GetRequiredService<Mediator>());
         services.AddScoped<IPublisher>(sp => sp.GetRequiredService<Mediator>());
+        services.AddScoped<ICustomerAccessGuard, CustomerAccessGuard>();
 
         var assembly = typeof(ConfigureServices).Assembly;
         var handlerInterfaces = new[]
