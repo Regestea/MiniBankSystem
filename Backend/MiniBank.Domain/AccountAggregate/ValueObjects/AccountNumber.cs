@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 
@@ -26,13 +27,15 @@ public sealed record AccountNumber
 
     public static AccountNumber Generate()
     {
-        // Generate 16-digit number, first digit 1-9
-        var rng = Random.Shared;
-        var digits = new char[16];
-        digits[0] = (char)('1' + rng.Next(9));
-        for (int i = 1; i < 16; i++)
-            digits[i] = (char)('0' + rng.Next(10));
-        return new AccountNumber(new string(digits));
+        // Use cryptographic RNG for unpredictable account numbers
+        var bytes = RandomNumberGenerator.GetBytes(8);
+        var number = BitConverter.ToUInt64(bytes);
+
+        // 16 digits, first digit 1-9
+        var firstDigit = (char)('1' + (int)(number % 9));
+        var remaining = (number % 1_000_000_000_000_000).ToString("D15");
+
+        return new AccountNumber($"{firstDigit}{remaining[..15]}");
     }
 
     public static implicit operator string(AccountNumber number) => number.Value;

@@ -15,12 +15,15 @@ public sealed class Account : AggregateRoot<AccountId>
     public AccountNumber AccountNumber { get; private set; } = null!;
     public AccountType AccountType { get; private set; }
     public AccountStatus Status { get; private set; }
+    
+    /// <summary>Persisted balance snapshot for O(1) reads/writes. Recomputed from ledger on rehydration.</summary>
+    public decimal BalanceAmount { get; private set; }
 
     private readonly List<LedgerEntry> _ledger = new();
 
     public IReadOnlyCollection<LedgerEntry> Ledger => _ledger.AsReadOnly();
 
-    public Money Balance => CalculateOrderedBalance();
+    public Money Balance => Money.FromDecimal(BalanceAmount);
 
     private Account() { }
 
@@ -30,7 +33,8 @@ public sealed class Account : AggregateRoot<AccountId>
         CustomerId = customerId;
         AccountNumber = accountNumber;
         AccountType = accountType;
-        Status = AccountStatus.Active;
+        Status = AccountStatus.PendingApproval;
+        BalanceAmount = 0m;
         CreatedAt = DateTimeOffset.UtcNow;
         UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -56,6 +60,8 @@ public sealed class Account : AggregateRoot<AccountId>
         var tx = TransactionAggregate.Transaction.CreateDeposit(Id, amount, description, referenceId);
         var entry = AppendPosting(tx.ToLedgerEntries()[0]);
 
+        BalanceAmount += amount.Amount;
+
         AddDomainEvent(new MoneyDepositedEvent(Id, amount, entry.Id));
         return (tx, entry);
     }
@@ -68,12 +74,14 @@ public sealed class Account : AggregateRoot<AccountId>
         var tx = TransactionAggregate.Transaction.CreateWithdraw(Id, amount, Balance, description, referenceId);
         var entry = AppendPosting(tx.ToLedgerEntries()[0]);
 
+        BalanceAmount -= amount.Amount;
+
         AddDomainEvent(new MoneyWithdrawnEvent(Id, amount, entry.Id));
         return (tx, entry);
     }
 
     /// <summary>Transfers money to another account via double-entry transaction.</summary>
-    public TransactionAggregate.Transaction TransferTo(Account destination, Money amount, string? description = null, string? referenceId = null)
+    public (TransactionAggregate.Transaction Transaction, LedgerEntry FromEntry, LedgerEntry ToEntry) TransferTo(Account destination, Money amount, string? description = null, string? referenceId = null)
     {
         if (destination is null)
             throw new DomainValidationException(nameof(destination), "Destination account cannot be null.");
@@ -87,14 +95,21 @@ public sealed class Account : AggregateRoot<AccountId>
         var (fromEntry, toEntry) = tx.ToTransferEntries();
 
         _ledger.Add(fromEntry);
-        destination._ledger.Add(toEntry);
+        BalanceAmount -= amount.Amount;
 
         IncrementVersion();
-        destination.IncrementVersion();
 
         AddDomainEvent(new MoneyTransferredEvent(Id, destination.Id, amount, tx.ReferenceId, fromEntry.Id, toEntry.Id));
 
-        return tx;
+        return (tx, fromEntry, toEntry);
+    }
+
+    /// <summary>Applies a destination ledger entry to this account (used by transfer handler).</summary>
+    public void ApplyInboundEntry(LedgerEntry entry)
+    {
+        _ledger.Add(entry);
+        BalanceAmount += entry.Amount.Amount;
+        IncrementVersion();
     }
 
     public void Freeze()
@@ -125,6 +140,8 @@ public sealed class Account : AggregateRoot<AccountId>
             throw new DomainOperationNotAllowedException(nameof(Status), "Account already closed.");
         if (Status == AccountStatus.Frozen)
             throw new DomainOperationNotAllowedException(nameof(Status), "Frozen account cannot be closed. Unfreeze first.");
+        if (Status == AccountStatus.PendingApproval)
+            throw new DomainOperationNotAllowedException(nameof(Status), "Pending approval account cannot be closed. Wait for admin approval or rejection.");
 
         if (!Balance.IsZero)
             throw new DomainInvariantViolationException(nameof(Balance), $"Cannot close account with non-zero balance: {Balance.Amount}");
@@ -132,6 +149,29 @@ public sealed class Account : AggregateRoot<AccountId>
         Status = AccountStatus.Closed;
         IncrementVersion();
         AddDomainEvent(new AccountClosedEvent(Id));
+    }
+
+    public void Approve()
+    {
+        if (Status != AccountStatus.PendingApproval)
+            throw new DomainOperationNotAllowedException(nameof(Status), "Only pending approval accounts can be approved.");
+
+        Status = AccountStatus.Active;
+        IncrementVersion();
+        AddDomainEvent(new AccountApprovedEvent(Id));
+    }
+
+    public void Reject(string reason)
+    {
+        if (Status != AccountStatus.PendingApproval)
+            throw new DomainOperationNotAllowedException(nameof(Status), "Only pending approval accounts can be rejected.");
+
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new DomainValidationException(nameof(reason), "Rejection reason cannot be empty.");
+
+        Status = AccountStatus.Closed;
+        IncrementVersion();
+        AddDomainEvent(new AccountRejectedEvent(Id, reason));
     }
 
     public IReadOnlyList<LedgerEntry> GetStatementOrdered()
@@ -144,10 +184,38 @@ public sealed class Account : AggregateRoot<AccountId>
         return entry;
     }
 
-    private Money CalculateOrderedBalance()
+    private void EnsureActive()
+    {
+        if (Status != AccountStatus.Active)
+            throw new DomainOperationNotAllowedException(nameof(Status), $"Account is {Status}, operation not allowed. Only Active accounts can transact.");
+    }
+
+    private Account(AccountId id, AccountNumber accountNumber, CustomerId customerId, AccountType accountType, AccountStatus status, List<LedgerEntry> ledger, int version, DateTimeOffset createdAt, DateTimeOffset updatedAt, decimal balanceAmount)
+        : base(id)
+    {
+        AccountNumber = accountNumber;
+        CustomerId = customerId;
+        AccountType = accountType;
+        Status = status;
+        _ledger = ledger ?? new();
+        Version = version;
+        CreatedAt = createdAt;
+        UpdatedAt = updatedAt;
+        BalanceAmount = balanceAmount;
+    }
+
+    /// <summary>Rehydrates an account from persistence. BalanceAmount is recomputed from ledger to ensure consistency.</summary>
+    public static Account Rehydrate(AccountId id, AccountNumber accountNumber, CustomerId customerId, AccountType accountType, AccountStatus status, IEnumerable<LedgerEntry> ledger, int version, DateTimeOffset createdAt, DateTimeOffset updatedAt)
+    {
+        var ledgerList = ledger.ToList();
+        var balanceAmount = CalculateOrderedBalanceFrom(ledgerList);
+        return new(id, accountNumber, customerId, accountType, status, ledgerList, version, createdAt, updatedAt, balanceAmount);
+    }
+
+    private static decimal CalculateOrderedBalanceFrom(IEnumerable<LedgerEntry> entries)
     {
         decimal total = 0m;
-        foreach (var entry in _ledger.OrderBy(e => e.OccurredOn).ThenBy(e => e.Id))
+        foreach (var entry in entries.OrderBy(e => e.OccurredOn).ThenBy(e => e.Id))
         {
             switch (entry.Type)
             {
@@ -162,28 +230,6 @@ public sealed class Account : AggregateRoot<AccountId>
             }
         }
 
-        return Money.FromDecimal(total);
+        return total;
     }
-
-    private void EnsureActive()
-    {
-        if (Status != AccountStatus.Active)
-            throw new DomainOperationNotAllowedException(nameof(Status), $"Account is {Status}, operation not allowed. Only Active accounts can transact.");
-    }
-
-    private Account(AccountId id, AccountNumber accountNumber, CustomerId customerId, AccountType accountType, AccountStatus status, List<LedgerEntry> ledger, int version, DateTimeOffset createdAt, DateTimeOffset updatedAt)
-        : base(id)
-    {
-        AccountNumber = accountNumber;
-        CustomerId = customerId;
-        AccountType = accountType;
-        Status = status;
-        _ledger = ledger ?? new();
-        Version = version;
-        CreatedAt = createdAt;
-        UpdatedAt = updatedAt;
-    }
-
-    public static Account Rehydrate(AccountId id, AccountNumber accountNumber, CustomerId customerId, AccountType accountType, AccountStatus status, IEnumerable<LedgerEntry> ledger, int version, DateTimeOffset createdAt, DateTimeOffset updatedAt)
-        => new(id, accountNumber, customerId, accountType, status, ledger.ToList(), version, createdAt, updatedAt);
 }

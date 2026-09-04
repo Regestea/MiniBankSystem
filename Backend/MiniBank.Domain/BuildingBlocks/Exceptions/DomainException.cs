@@ -6,8 +6,8 @@ public abstract class DomainException : Exception
     public string Field { get; }
     public object Details { get; }
 
-    protected DomainException(ExceptionStatusCode statusCode, string field, object details)
-        : base($"{field}: {details}")
+    protected DomainException(ExceptionStatusCode statusCode, string field, object details, Exception? innerException = null)
+        : base($"{field}: {details}", innerException)
     {
         StatusCode = statusCode;
         Field = field;
