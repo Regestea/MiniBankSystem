@@ -24,6 +24,7 @@ public sealed class CloseAccountHandlerTests
     private static Account CreateAccount(Guid ownerId, decimal balance = 0m, AccountStatus status = AccountStatus.Active)
     {
         var acc = Account.Open(new CustomerId(ownerId), AccountType.Current);
+        acc.Approve();
         if (balance > 0)
             acc.Deposit(Money.FromDecimal(balance));
         if (status == AccountStatus.Frozen) acc.Freeze();

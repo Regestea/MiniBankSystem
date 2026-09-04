@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MiniBank.Abstractions;
 using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
@@ -12,8 +13,13 @@ public sealed class FreezeAccountHandlerTests
 {
     private readonly IAccountRepository _accounts = Substitute.For<IAccountRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly ICurrentUserContext _currentUser = Substitute.For<ICurrentUserContext>();
 
-    private FreezeAccountHandler CreateHandler() => new(_accounts, _uow);
+    private FreezeAccountHandler CreateHandler()
+    {
+        _currentUser.IsAdmin.Returns(true);
+        return new(_accounts, _currentUser, _uow);
+    }
 
     private static Account CreateActiveAccount() =>
         Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(Guid.NewGuid()), AccountType.Current);
@@ -44,6 +50,18 @@ public sealed class FreezeAccountHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsync_NonAdmin_ThrowsForbidden()
+    {
+        var account = CreateActiveAccount();
+        _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        _currentUser.IsAdmin.Returns(false);
+        var handler = new FreezeAccountHandler(_accounts, _currentUser, _uow);
+
+        var act = async () => await handler.HandleAsync(new FreezeAccountCommand(account.Id.Value));
+        await act.Should().ThrowAsync<ForbiddenException>();
+    }
+
+    [Fact]
     public async Task HandleAsync_AlreadyFrozen_ThrowsNotAllowed()
     {
         var account = CreateActiveAccount();
@@ -61,6 +79,7 @@ public sealed class FreezeAccountHandlerTests
     public async Task HandleAsync_ClosedAccount_ThrowsNotAllowed()
     {
         var account = CreateActiveAccount();
+        account.Approve();
         // need zero balance to close
         account.Close();
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);

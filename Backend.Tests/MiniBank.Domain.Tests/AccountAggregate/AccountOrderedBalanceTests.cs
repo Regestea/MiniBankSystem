@@ -69,11 +69,14 @@ public class AccountOrderedBalanceTests
     {
         var customerId = new CustomerId(Guid.NewGuid());
         var from = Account.Open(customerId, AccountType.Current);
+        from.Approve();
         var to = Account.Open(customerId, AccountType.Savings);
+        to.Approve();
 
         from.Deposit(Money.FromDecimal(1000m));
         // Use Transaction-based transfer
-        from.TransferTo(to, Money.FromDecimal(300m));
+        var (_, _, toEntry) = from.TransferTo(to, Money.FromDecimal(300m));
+        to.ApplyInboundEntry(toEntry);
 
         // Add another deposit to 'from' with earlier timestamp via rehydration to test ordering
         var earlier = DateTimeOffset.UtcNow.AddHours(-2);
@@ -91,7 +94,9 @@ public class AccountOrderedBalanceTests
     {
         var customerId = new CustomerId(Guid.NewGuid());
         var from = Account.Open(customerId, AccountType.Current);
+        from.Approve();
         var to = Account.Open(customerId, AccountType.Savings);
+        to.Approve();
 
         // Deposit 500 now
         from.Deposit(Money.FromDecimal(500m));

@@ -5,6 +5,7 @@ using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
+using MiniBank.Domain.RiskAggregate;
 using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Features.Accounts.Withdraw;
 using MiniBank.Features.Customers;
@@ -18,13 +19,22 @@ public sealed class WithdrawHandlerTests
     private readonly ITransactionRepository _transactions = Substitute.For<ITransactionRepository>();
     private readonly ICurrentUserContext _currentUser = Substitute.For<ICurrentUserContext>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly IRiskRepository _riskRepo = Substitute.For<IRiskRepository>();
 
     private readonly ICustomerAccessGuard _customerAccess = Substitute.For<ICustomerAccessGuard>();
-    private WithdrawHandler CreateHandler() => new(_accounts, _customerAccess, _transactions, _currentUser, _uow);
+
+    private void SetupRiskForCustomer(Guid customerId)
+    {
+        var risk = CustomerRisk.Create(customerId);
+        _riskRepo.GetByCustomerIdAsync(customerId, Arg.Any<CancellationToken>()).Returns(risk);
+    }
+
+    private WithdrawHandler CreateHandler() => new(_accounts, _customerAccess, _transactions, _riskRepo, _currentUser, _uow);
 
     private static Account CreateFundedAccount(Guid ownerId, decimal initialDeposit = 1000m)
     {
         var acc = Account.Open(new CustomerId(ownerId), AccountType.Current);
+        acc.Approve();
         acc.Deposit(MiniBank.Domain.BuildingBlocks.ValueObjects.Money.FromDecimal(initialDeposit));
         return acc;
     }
@@ -36,9 +46,10 @@ public sealed class WithdrawHandlerTests
         var account = CreateFundedAccount(ownerId, 1000m);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
         _currentUser.UserId.Returns(ownerId);
+        SetupRiskForCustomer(ownerId);
 
         var handler = CreateHandler();
-        var response = await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 400m));
+        var response = await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 400m, "test-withdraw-1"));
 
         response.Amount.Should().Be(400m);
         account.Balance.Amount.Should().Be(600m);
@@ -53,9 +64,10 @@ public sealed class WithdrawHandlerTests
         var account = CreateFundedAccount(ownerId, 200m);
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
         _currentUser.UserId.Returns(ownerId);
+        SetupRiskForCustomer(ownerId);
 
         var handler = CreateHandler();
-        var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 500m));
+        var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 500m, "test-withdraw-insufficient"));
 
         await act.Should().ThrowAsync<DomainInvariantViolationException>()
             .Where(ex => ex.Details.ToString()!.Contains("Insufficient funds"));
@@ -68,7 +80,7 @@ public sealed class WithdrawHandlerTests
         _accounts.LoadAsync(Arg.Any<AccountId>(), Arg.Any<CancellationToken>()).Returns((Account?)null);
         var handler = CreateHandler();
 
-        var act = async () => await handler.HandleAsync(new WithdrawCommand(Guid.NewGuid(), 100m));
+        var act = async () => await handler.HandleAsync(new WithdrawCommand(Guid.NewGuid(), 100m, "test-withdraw-notfound"));
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
@@ -81,7 +93,66 @@ public sealed class WithdrawHandlerTests
         _currentUser.UserId.Returns(Guid.NewGuid());
 
         var handler = CreateHandler();
-        var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 100m));
+        var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 100m, "test-withdraw-notowned"));
         await act.Should().ThrowAsync<ForbiddenException>();
+    }
+
+    [Fact]
+    public async Task HandleAsync_MissingRisk_ThrowsUnprocessable()
+    {
+        var ownerId = Guid.NewGuid();
+        var account = CreateFundedAccount(ownerId);
+        _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        _currentUser.UserId.Returns(ownerId);
+        _riskRepo.GetByCustomerIdAsync(ownerId, Arg.Any<CancellationToken>()).Returns((CustomerRisk?)null);
+
+        var handler = CreateHandler();
+        var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 100m, "no-risk-w"));
+
+        await act.Should().ThrowAsync<DomainInvariantViolationException>()
+            .Where(ex => ex.StatusCode == MiniBank.Domain.BuildingBlocks.Exceptions.ExceptionStatusCode.UnprocessableEntity);
+    }
+
+    [Fact]
+    public async Task HandleAsync_DailyLimitExceeded_ThrowsUnprocessable()
+    {
+        var ownerId = Guid.NewGuid();
+        var account = CreateFundedAccount(ownerId, 5000m);
+        _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        _currentUser.UserId.Returns(ownerId);
+        var risk = CustomerRisk.Create(ownerId);
+        risk.SetRiskLevel(MiniBank.Domain.RiskAggregate.RiskLevel.High);
+        _riskRepo.GetByCustomerIdAsync(ownerId, Arg.Any<CancellationToken>()).Returns(risk);
+
+        var handler = CreateHandler();
+        var act = async () => await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 2000m, "over-limit-w"));
+
+        await act.Should().ThrowAsync<DomainInvariantViolationException>()
+            .Where(ex => ex.Details.ToString()!.Contains("Daily transaction limit exceeded"));
+    }
+
+    [Fact]
+    public async Task HandleAsync_SameKeySamePayload_ReplaysOriginal()
+    {
+        var ownerId = Guid.NewGuid();
+        var account = CreateFundedAccount(ownerId);
+        _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
+        _currentUser.UserId.Returns(ownerId);
+        SetupRiskForCustomer(ownerId);
+
+        var existing = Transaction.CreateWithdraw(
+            account.Id,
+            MiniBank.Domain.BuildingBlocks.ValueObjects.Money.FromDecimal(100m),
+            account.Balance,
+            "existing",
+            "replay-withdraw-1");
+        _transactions.GetByReferenceIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(existing);
+
+        var handler = CreateHandler();
+        var response = await handler.HandleAsync(new WithdrawCommand(account.Id.Value, 100m, "replay-withdraw-1"));
+
+        response.TransactionId.Should().Be(existing.Id.Value);
+        await _transactions.DidNotReceive().AddAsync(Arg.Any<Transaction>(), Arg.Any<CancellationToken>());
     }
 }

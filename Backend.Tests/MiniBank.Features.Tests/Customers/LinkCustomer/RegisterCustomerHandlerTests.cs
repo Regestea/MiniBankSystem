@@ -1,9 +1,11 @@
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using MiniBank.Abstractions;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
+using MiniBank.Domain.RiskAggregate;
 using MiniBank.Features.Customers.RegisterCustomer;
 using MiniBank.Features.Messaging;
 using NSubstitute;
@@ -14,10 +16,12 @@ namespace MiniBank.Features.Tests.Customers.LinkCustomer;
 public sealed class RegisterCustomerHandlerTests
 {
     private readonly ICustomerRepository _customers = Substitute.For<ICustomerRepository>();
+    private readonly IRiskRepository _riskRepo = Substitute.For<IRiskRepository>();
     private readonly IIdentityUserService _identity = Substitute.For<IIdentityUserService>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly ILogger<RegisterCustomerHandler> _logger = Substitute.For<ILogger<RegisterCustomerHandler>>();
 
-    private RegisterCustomerHandler CreateHandler() => new(_customers, _identity, _uow);
+    private RegisterCustomerHandler CreateHandler() => new(_customers, _riskRepo, _identity, _uow, _logger);
 
     [Fact]
     public async Task HandleAsync_Valid_CreatesCustomer_WithSameGuid()
@@ -146,5 +150,22 @@ public sealed class RegisterCustomerHandlerTests
         capturedCustomer.Should().NotBeNull();
         capturedCustomer!.Id.Value.Should().Be(capturedId!.Value);
         response.CustomerId.Should().Be(capturedId.Value);
+    }
+
+    [Fact]
+    public async Task HandleAsync_DomainSaveFails_CompensatesOrphanIdentityUser()
+    {
+        _customers.EmailExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        _identity.CreateUserAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DomainConflictException("customer", "Simulated save failure."));
+
+        var handler = CreateHandler();
+        var act = async () => await handler.HandleAsync(
+            new RegisterCustomerCommand("user@test.com", "P@ssw0rd1", "John", "09123456789"));
+
+        await act.Should().ThrowAsync<DomainConflictException>();
+        await _identity.Received(1).DeleteUserAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 }

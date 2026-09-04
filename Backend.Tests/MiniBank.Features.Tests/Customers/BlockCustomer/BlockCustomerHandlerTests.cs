@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MiniBank.Abstractions;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
@@ -11,8 +12,13 @@ public sealed class BlockCustomerHandlerTests
 {
     private readonly ICustomerRepository _customers = Substitute.For<ICustomerRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly ICurrentUserContext _currentUser = Substitute.For<ICurrentUserContext>();
 
-    private BlockCustomerHandler CreateHandler() => new(_customers, _uow);
+    private BlockCustomerHandler CreateHandler()
+    {
+        _currentUser.IsAdmin.Returns(true);
+        return new(_customers, _currentUser, _uow);
+    }
 
     [Fact]
     public async Task HandleAsync_PendingCustomer_Blocks()

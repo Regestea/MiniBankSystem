@@ -14,17 +14,19 @@ public class AccountTests
     private static Account CreateAccount(CustomerId? customerId = null, AccountType type = AccountType.Current)
     {
         customerId ??= new CustomerId(Guid.NewGuid());
-        return Account.Open(customerId, type);
+        var account = Account.Open(customerId, type);
+        account.Approve();
+        return account;
     }
 
     [Fact]
-    public void Open_Valid_CreatesActiveAccountWithEvent()
+    public void Open_Valid_CreatesPendingApprovalAccountWithEvent()
     {
         var customerId = new CustomerId(Guid.NewGuid());
         var account = Account.Open(customerId, AccountType.Savings);
         Assert.Equal(customerId, account.CustomerId);
         Assert.Equal(AccountType.Savings, account.AccountType);
-        Assert.Equal(AccountStatus.Active, account.Status);
+        Assert.Equal(AccountStatus.PendingApproval, account.Status);
         Assert.Equal(0, account.Version);
         Assert.Single(account.DomainEvents);
         Assert.IsType<AccountOpenedEvent>(account.DomainEvents.First());
@@ -62,7 +64,7 @@ public class AccountTests
         Assert.NotNull(tx);
         Assert.NotEmpty(tx.DomainEvents);
         Assert.Equal(entry.ReferenceId, tx.ReferenceId);
-        Assert.Equal(1, account.Version);
+        Assert.Equal(2, account.Version);
         Assert.Single(account.DomainEvents);
         Assert.IsType<MoneyDepositedEvent>(account.DomainEvents.First());
     }
@@ -269,13 +271,13 @@ public class AccountTests
     [Fact]
     public void Version_IncrementsOnEachOperation()
     {
-        var account = CreateAccount();
-        Assert.Equal(0, account.Version);
-        account.Deposit(Money.FromDecimal(100m));
+        var account = CreateAccount(); // Open + Approve = version 1
         Assert.Equal(1, account.Version);
-        account.Withdraw(Money.FromDecimal(50m));
+        account.Deposit(Money.FromDecimal(100m));
         Assert.Equal(2, account.Version);
-        account.Freeze();
+        account.Withdraw(Money.FromDecimal(50m));
         Assert.Equal(3, account.Version);
+        account.Freeze();
+        Assert.Equal(4, account.Version);
     }
 }

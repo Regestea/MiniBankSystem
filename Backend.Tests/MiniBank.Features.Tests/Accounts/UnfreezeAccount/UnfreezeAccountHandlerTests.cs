@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MiniBank.Abstractions;
 using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
@@ -12,8 +13,13 @@ public sealed class UnfreezeAccountHandlerTests
 {
     private readonly IAccountRepository _accounts = Substitute.For<IAccountRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly ICurrentUserContext _currentUser = Substitute.For<ICurrentUserContext>();
 
-    private UnfreezeAccountHandler CreateHandler() => new(_accounts, _uow);
+    private UnfreezeAccountHandler CreateHandler()
+    {
+        _currentUser.IsAdmin.Returns(true);
+        return new(_accounts, _currentUser, _uow);
+    }
 
     private static Account CreateFrozenAccount()
     {
@@ -63,6 +69,7 @@ public sealed class UnfreezeAccountHandlerTests
     public async Task HandleAsync_ClosedAccount_ThrowsNotAllowed()
     {
         var account = Account.Open(new Domain.CustomerAggregate.ValueObjects.CustomerId(Guid.NewGuid()), AccountType.Current);
+        account.Approve();
         account.Close();
         _accounts.LoadAsync(account.Id, Arg.Any<CancellationToken>()).Returns(account);
         var handler = CreateHandler();

@@ -22,10 +22,11 @@ public class DomainExceptionTests
     }
 
     [Fact]
-    public void DomainOperationNotAllowedException_HasNotAllowedStatus()
+    public void DomainOperationNotAllowedException_MapsToConflict()
     {
         var ex = new DomainOperationNotAllowedException("status", "not allowed");
-        Assert.Equal(ExceptionStatusCode.NotAllowed, ex.StatusCode);
+        Assert.Equal(ExceptionStatusCode.Conflict, ex.StatusCode);
+        Assert.Equal(409, (int)ex.StatusCode);
     }
 
     [Fact]
@@ -41,7 +42,6 @@ public class DomainExceptionTests
     {
         Assert.Equal(404, (int)ExceptionStatusCode.NotFound);
         Assert.Equal(400, (int)ExceptionStatusCode.BadRequest);
-        Assert.Equal(405, (int)ExceptionStatusCode.NotAllowed);
         Assert.Equal(422, (int)ExceptionStatusCode.UnprocessableEntity);
         Assert.Equal(409, (int)ExceptionStatusCode.Conflict);
     }

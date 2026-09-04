@@ -53,9 +53,16 @@ public sealed class PostgresFixture : IAsyncLifetime
     public async Task ClearDomainTablesAsync()
     {
         await using var ctx = CreateContext();
-        // Order matters due to FKs: ledger_entries (owned) -> accounts -> transactions -> customers
+        // Order matters due to FKs: ledger_entries (owned) -> accounts -> transactions -> customers -> audit_logs
         await ctx.Database.ExecuteSqlRawAsync(
-            @"TRUNCATE TABLE ""ledger_entries"", ""transactions"", ""accounts"", ""customers"" CASCADE;");
+            @"TRUNCATE TABLE ""ledger_entries"", ""transactions"", ""accounts"", ""customers"", ""audit_logs"" CASCADE;");
+    }
+
+    /// <summary>Clears outbox messages for test isolation.</summary>
+    public async Task ClearOutboxAsync()
+    {
+        await using var ctx = CreateContext();
+        await ctx.Database.ExecuteSqlRawAsync(@"TRUNCATE TABLE ""outbox_messages"" CASCADE;");
     }
 
     /// <summary>

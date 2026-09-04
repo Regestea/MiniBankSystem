@@ -1,8 +1,10 @@
 using Dapper;
 using FluentAssertions;
 using MiniBank.Domain.AccountAggregate;
+using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks.ValueObjects;
 using MiniBank.Domain.CustomerAggregate;
+using MiniBank.Domain.CustomerAggregate.ValueObjects;
 using MiniBank.Infrastructure.Tests.Fixtures;
 
 namespace MiniBank.Infrastructure.Tests.Dapper;
@@ -17,6 +19,13 @@ public sealed class DapperReadModelTests
 {
     private readonly PostgresFixture _fixture;
     public DapperReadModelTests(PostgresFixture fixture) => _fixture = fixture;
+
+    private static Account OpenAndApproveAccount(CustomerId customerId, AccountType type = AccountType.Current)
+    {
+        var account = Account.Open(customerId, type);
+        account.Approve();
+        return account;
+    }
 
     [Fact]
     public async Task Dapper_Can_Query_Customers_Written_Via_EfCore()
@@ -44,13 +53,14 @@ public sealed class DapperReadModelTests
     {
         // Seed account with ledger entries via Domain (EF Core), then query balance via Dapper SQL used in GetStatementHandler/GetBankReportHandler
         var customer = Customer.Create("Charlie Brown", $"bal_{Guid.NewGuid():N}@test.com", "09123456789");
-        var account = Account.Open(customer.Id, AccountType.Current);
+        var account = OpenAndApproveAccount(customer.Id);
         account.Deposit(Money.FromDecimal(1000m));
         account.Withdraw(Money.FromDecimal(250m));
         // Simulate transfer out 100
         var otherCustomer = Customer.Create("Other", $"other_{Guid.NewGuid():N}@test.com", "09123456789");
-        var otherAccount = Account.Open(otherCustomer.Id, AccountType.Current);
-        account.TransferTo(otherAccount, Money.FromDecimal(100m));
+        var otherAccount = OpenAndApproveAccount(otherCustomer.Id);
+        var (_, _, toEntry) = account.TransferTo(otherAccount, Money.FromDecimal(100m));
+        otherAccount.ApplyInboundEntry(toEntry);
 
         await using (var ctx = _fixture.CreateContext())
         {
@@ -79,7 +89,7 @@ public sealed class DapperReadModelTests
     {
         // Seed at least one customer/account to ensure counts >=1, then run same SQL as GetBankReportHandler
         var customer = Customer.Create("Report User", $"report_{Guid.NewGuid():N}@test.com", "09123456789");
-        var account = Account.Open(customer.Id, AccountType.Current);
+        var account = OpenAndApproveAccount(customer.Id);
         account.Deposit(Money.FromDecimal(100m));
         await using (var ctx = _fixture.CreateContext())
         {
@@ -108,7 +118,7 @@ public sealed class DapperReadModelTests
     public async Task Dapper_LedgerEntries_Ordering_Matches_Domain_GetStatementOrdered()
     {
         var customer = Customer.Create("Emma Wilson", $"order_{Guid.NewGuid():N}@test.com", "09123456789");
-        var account = Account.Open(customer.Id, AccountType.Current);
+        var account = OpenAndApproveAccount(customer.Id);
         account.Deposit(Money.FromDecimal(100m));
         await Task.Delay(10); // ensure different OccurredOn
         account.Deposit(Money.FromDecimal(200m));
@@ -141,9 +151,9 @@ public sealed class DapperReadModelTests
         // Validates the fixed GetAccountsHandler SQL: WHERE a.customer_id = @UserId (no AspNetUsers join)
         var customerA = Customer.Create("Alice Owner", $"ownA_{Guid.NewGuid():N}@test.com", "09123456789");
         var customerB = Customer.Create("Bob Stranger", $"ownB_{Guid.NewGuid():N}@test.com", "09123456789");
-        var accountA1 = Account.Open(customerA.Id, AccountType.Current);
-        var accountA2 = Account.Open(customerA.Id, AccountType.Savings);
-        var accountB = Account.Open(customerB.Id, AccountType.Current);
+        var accountA1 = OpenAndApproveAccount(customerA.Id);
+        var accountA2 = OpenAndApproveAccount(customerA.Id, AccountType.Savings);
+        var accountB = OpenAndApproveAccount(customerB.Id);
         accountA1.Deposit(Money.FromDecimal(100m));
         accountB.Deposit(Money.FromDecimal(999m));
 
@@ -194,7 +204,7 @@ public sealed class DapperReadModelTests
         // Validates the fixed GetStatementHandler AccountSql: WHERE a.account_id=@AccountId AND a.customer_id=@RequesterUserId
         var owner = Customer.Create("Owner", $"stmtOwn_{Guid.NewGuid():N}@test.com", "09123456789");
         var stranger = Customer.Create("Stranger", $"stmtStr_{Guid.NewGuid():N}@test.com", "09123456789");
-        var account = Account.Open(owner.Id, AccountType.Current);
+        var account = OpenAndApproveAccount(owner.Id);
         account.Deposit(Money.FromDecimal(500m));
 
         await using (var ctx = _fixture.CreateContext())

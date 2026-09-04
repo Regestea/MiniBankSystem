@@ -19,6 +19,7 @@ public sealed class TransactionRepositoryTests
     {
         var customer = Customer.Create("Bob Jones", $"c_{Guid.NewGuid():N}@test.com", "09123456789");
         var account = Account.Open(customer.Id, AccountType.Current);
+        account.Approve();
         if (balance > 0) account.Deposit(Money.FromDecimal(balance));
 
         await using var ctx = _fixture.CreateContext();
@@ -58,6 +59,7 @@ public sealed class TransactionRepositoryTests
         var from = await SeedAccountWithBalanceAsync(1000m);
         var toCustomer = Customer.Create("David Wilson", $"to_{Guid.NewGuid():N}@test.com", "09123456789");
         var to = Account.Open(toCustomer.Id, AccountType.Current);
+        to.Approve();
         await using (var ctx = _fixture.CreateContext())
         {
             await _fixture.SeedIdentityUserAsync(toCustomer.Id.Value, toCustomer.Email);
@@ -66,7 +68,7 @@ public sealed class TransactionRepositoryTests
             await ctx.SaveChangesAsync();
         }
 
-        var tx = from.TransferTo(to, Money.FromDecimal(300m));
+        var (tx, _, _) = from.TransferTo(to, Money.FromDecimal(300m));
 
         await using (var ctx = _fixture.CreateContext())
         {

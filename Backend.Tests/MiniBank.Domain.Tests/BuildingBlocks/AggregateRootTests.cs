@@ -104,9 +104,10 @@ public class AggregateRootTests
     public void RealAggregate_Account_UsesBuildingBlocksCorrectly()
     {
         var account = Account.Open(new CustomerId(Guid.NewGuid()), AccountType.Current);
-        Assert.Equal(0, account.Version);
-        account.Deposit(Money.FromDecimal(100m));
+        account.Approve();
         Assert.Equal(1, account.Version);
-        Assert.Equal(2, account.DomainEvents.Count); // Opened + Deposited
+        account.Deposit(Money.FromDecimal(100m));
+        Assert.Equal(2, account.Version);
+        Assert.Equal(3, account.DomainEvents.Count); // Opened + Approved + Deposited
     }
 }

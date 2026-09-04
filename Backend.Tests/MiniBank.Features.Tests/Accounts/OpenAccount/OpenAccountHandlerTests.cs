@@ -32,7 +32,7 @@ public sealed class OpenAccountHandlerTests
         var response = await handler.HandleAsync(new OpenAccountCommand("Current"));
 
         response.AccountId.Should().NotBe(Guid.Empty);
-        response.Status.Should().Be("Active");
+        response.Status.Should().Be("PendingApproval");
         await _accounts.Received(1).AddAsync(Arg.Is<Account>(a => a.CustomerId.Value == userId), Arg.Any<CancellationToken>());
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -69,7 +69,6 @@ public sealed class OpenAccountHandlerTests
     [Theory]
     [InlineData("Savings", AccountType.Savings)]
     [InlineData("Current", AccountType.Current)]
-    [InlineData("Other", AccountType.Current)]
     public async Task HandleAsync_MapsAccountType(string input, AccountType expected)
     {
         var userId = Guid.NewGuid();
@@ -84,5 +83,20 @@ public sealed class OpenAccountHandlerTests
         await handler.HandleAsync(new OpenAccountCommand(input));
 
         captured!.AccountType.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task HandleAsync_InvalidAccountType_ThrowsValidation()
+    {
+        var userId = Guid.NewGuid();
+        var customer = Customer.Create(new FullName("John"), new Email("john@test.com"), new PhoneNumber("09123456789"), new CustomerId(userId));
+        customer.Verify();
+        _currentUser.UserId.Returns(userId);
+        _customers.GetByIdAsync(customer.Id, Arg.Any<CancellationToken>()).Returns(customer);
+
+        var handler = CreateHandler();
+        var act = async () => await handler.HandleAsync(new OpenAccountCommand("Other"));
+
+        await act.Should().ThrowAsync<DomainValidationException>();
     }
 }

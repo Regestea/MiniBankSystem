@@ -50,18 +50,25 @@ public class ArchitectureTests
     [Fact]
     public void Domain_Aggregates_Should_Be_Sealed()
     {
-        var result = Types.InAssembly(DomainAssembly)
-            .That().ResideInNamespace("MiniBank.Domain.AccountAggregate")
-            .Or().ResideInNamespace("MiniBank.Domain.CustomerAggregate")
-            .Or().ResideInNamespace("MiniBank.Domain.TransactionAggregate")
-            .And().AreClasses().And().DoNotHaveNameMatching(".*Id$|.*Status$|.*Type$")
-            .Should().BeSealed()
-            .GetResult();
+        // Repository interfaces (I*Repository) live in aggregate namespaces by DDD convention
+        // but cannot be sealed; value-object/enum names (*Id/*Status/*Type/*Action/*Level) are covered elsewhere.
+        var candidates = DomainAssembly.GetTypes()
+            .Where(t => t.Namespace is not null
+                && (t.Namespace == "MiniBank.Domain.AccountAggregate"
+                    || t.Namespace == "MiniBank.Domain.CustomerAggregate"
+                    || t.Namespace == "MiniBank.Domain.TransactionAggregate"
+                    || t.Namespace == "MiniBank.Domain.DocumentAggregate"
+                    || t.Namespace == "MiniBank.Domain.KycAggregate"
+                    || t.Namespace == "MiniBank.Domain.AuditAggregate"
+                    || t.Namespace == "MiniBank.Domain.RiskAggregate")
+                && t.IsClass && !t.IsInterface && !t.IsEnum && !t.IsValueType
+                && !System.Text.RegularExpressions.Regex.IsMatch(t.Name, ".*(Id|Status|Type|Action|Level)$"))
+            .ToList();
 
-        // Filter to aggregates: Account, Customer, Transaction, LedgerEntry
-        var failing = result.FailingTypes?.Where(t => t.Name is "Account" or "Customer" or "Transaction").ToList();
-        Assert.True(failing == null || failing.Count == 0,
-            $"Aggregates not sealed: {string.Join(", ", failing?.Select(t => t.FullName) ?? Array.Empty<string>())}");
+        Assert.NotEmpty(candidates);
+        var notSealed = candidates.Where(t => !t.IsSealed).ToList();
+        Assert.True(notSealed.Count == 0,
+            $"Aggregates not sealed: {string.Join(", ", notSealed.Select(t => t.FullName))}");
     }
 
     [Fact]
@@ -172,19 +179,7 @@ public class ArchitectureTests
     [Fact]
     public void Vertical_Slices_Should_Not_Reference_Each_Other()
     {
-        // E.g., Accounts.Deposit should not depend on Customers.VerifyCustomer
-        // We check: types in Features.Accounts.* should not have dependency on Features.Customers.*
-        var accountsTypes = Types.InAssembly(FeaturesAssembly)
-            .That().ResideInNamespaceMatching("MiniBank.Features.Accounts.*")
-            .GetTypes();
-
-        var violating = accountsTypes.Where(t =>
-            t.GetMethods().Any(m => m.ReturnType?.Namespace?.StartsWith("MiniBank.Features.Customers") == true) ||
-            t.GetProperties().Any(p => p.PropertyType?.Namespace?.StartsWith("MiniBank.Features.Customers") == true) ||
-            Types.InAssembly(FeaturesAssembly).That().ResideInNamespace("MiniBank.Features.Accounts.Deposit").GetTypes().Any() // placeholder
-        ).ToList();
-
-        // More precise: use NetArchTest dependency check
+        // E.g., Accounts.Deposit should not depend on Customers.VerifyCustomer.
         var result = Types.InAssembly(FeaturesAssembly)
             .That().ResideInNamespaceMatching("MiniBank.Features.Accounts.*")
             .ShouldNot()
@@ -250,13 +245,19 @@ public class ArchitectureTests
     [Fact]
     public void Infrastructure_Should_Not_Contain_Handlers()
     {
-        var result = Types.InAssembly(InfrastructureAssembly)
-            .ShouldNot()
-            .HaveNameEndingWith("Handler")
-            .GetResult();
+        // Domain event handlers (IDomainEventHandler<T>) are allowed in Infrastructure
+        // because they need access to repositories and dispatch domain events.
+        var handlerTypes = Types.InAssembly(InfrastructureAssembly)
+            .That().HaveNameEndingWith("Handler")
+            .GetTypes();
 
-        // This checks no type named Handler exists in Infra — trivially true unless mis-placed
-        Assert.True(result.IsSuccessful, "Infrastructure should not contain Handlers (they belong to Features).");
+        var violating = handlerTypes.Where(t =>
+            !t.GetInterfaces().Any(i =>
+                i.IsGenericType && i.GetGenericTypeDefinition().Name.StartsWith("IDomainEventHandler")))
+            .ToList();
+
+        Assert.True(violating.Count == 0,
+            $"Infrastructure should not contain non-domain-event Handlers: {string.Join(", ", violating.Select(t => t.FullName))}");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

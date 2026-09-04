@@ -1,4 +1,5 @@
 using FluentAssertions;
+using MiniBank.Abstractions;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
@@ -11,8 +12,13 @@ public sealed class VerifyCustomerHandlerTests
 {
     private readonly ICustomerRepository _customers = Substitute.For<ICustomerRepository>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly ICurrentUserContext _currentUser = Substitute.For<ICurrentUserContext>();
 
-    private VerifyCustomerHandler CreateHandler() => new(_customers, _uow);
+    private VerifyCustomerHandler CreateHandler()
+    {
+        _currentUser.IsAdmin.Returns(true);
+        return new(_customers, _currentUser, _uow);
+    }
 
     [Fact]
     public async Task HandleAsync_PendingCustomer_Verifies_And_Persists()
@@ -39,6 +45,19 @@ public sealed class VerifyCustomerHandlerTests
 
         await act.Should().ThrowAsync<NotFoundException>();
         await _uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NonAdmin_ThrowsForbidden()
+    {
+        var customer = Customer.Create("John Doe", "john@test.com", "09123456789");
+        _customers.GetByIdAsync(customer.Id, Arg.Any<CancellationToken>()).Returns(customer);
+        _currentUser.IsAdmin.Returns(false);
+        var handler = new VerifyCustomerHandler(_customers, _currentUser, _uow);
+
+        var act = async () => await handler.HandleAsync(new VerifyCustomerCommand(customer.Id.Value));
+
+        await act.Should().ThrowAsync<ForbiddenException>();
     }
 
     [Fact]

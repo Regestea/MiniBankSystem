@@ -29,6 +29,7 @@ public sealed class AccountRepositoryTests
     {
         var customer = await SeedCustomerAsync();
         var account = Account.Open(customer.Id, AccountType.Current);
+        account.Approve();
         var (tx, _) = account.Deposit(Money.FromDecimal(500m));
 
         await using (var ctx = _fixture.CreateContext())
@@ -50,7 +51,7 @@ public sealed class AccountRepositoryTests
             loaded.Ledger.Should().HaveCount(1);
             loaded.Balance.Amount.Should().Be(500m);
             loaded.Ledger.First().Amount.Amount.Should().Be(500m);
-            loaded.Version.Should().Be(1); // Deposit increments version: Account.cs:58,142
+            loaded.Version.Should().Be(2); // Approve + Deposit increments version
         }
     }
 
@@ -59,6 +60,7 @@ public sealed class AccountRepositoryTests
     {
         var customer = await SeedCustomerAsync();
         var account = Account.Open(customer.Id, AccountType.Savings);
+        account.Approve();
         account.Deposit(Money.FromDecimal(1000m));
         account.Withdraw(Money.FromDecimal(300m));
 
@@ -82,9 +84,12 @@ public sealed class AccountRepositoryTests
         var customer1 = await SeedCustomerAsync();
         var customer2 = await SeedCustomerAsync();
         var from = Account.Open(customer1.Id, AccountType.Current);
+        from.Approve();
         var to = Account.Open(customer2.Id, AccountType.Current);
+        to.Approve();
         from.Deposit(Money.FromDecimal(1000m));
-        from.TransferTo(to, Money.FromDecimal(400m));
+        var (_, _, toEntry) = from.TransferTo(to, Money.FromDecimal(400m));
+        to.ApplyInboundEntry(toEntry);
 
         await using (var ctx = _fixture.CreateContext())
         {
@@ -131,6 +136,7 @@ public sealed class AccountRepositoryTests
     {
         var customer = await SeedCustomerAsync();
         var account = Account.Open(customer.Id, AccountType.Current);
+        account.Approve();
 
         await using (var ctx = _fixture.CreateContext())
         {
@@ -165,6 +171,7 @@ public sealed class AccountRepositoryTests
     {
         var customer = await SeedCustomerAsync();
         var account = Account.Open(customer.Id, AccountType.Current);
+        account.Approve();
         await using (var ctx = _fixture.CreateContext())
         {
             await ctx.Accounts.AddAsync(account);
@@ -178,9 +185,9 @@ public sealed class AccountRepositoryTests
         var acc2 = await ctx2.Accounts.FirstAsync(a => a.Id == account.Id);
 
         acc1.Freeze();
-        await ctx1.SaveChangesAsync(); // version 1
+        await ctx1.SaveChangesAsync(); // version 2
 
-        acc2.Freeze(); // also tries to freeze from version 0
+        acc2.Freeze(); // also tries to freeze from version 1
         var act = async () => await ctx2.SaveChangesAsync();
         await act.Should().ThrowAsync<DbUpdateConcurrencyException>();
     }
@@ -190,6 +197,7 @@ public sealed class AccountRepositoryTests
     {
         var customer = await SeedCustomerAsync();
         var account = Account.Open(customer.Id, AccountType.Current);
+        account.Approve();
         account.Deposit(Money.FromDecimal(123.45m));
 
         await using (var ctx = _fixture.CreateContext())
