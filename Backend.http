@@ -1,0 +1,81 @@
+@base = http://localhost:5194
+# After `dotnet run --project Backend/MiniBank.Api` (Development, `http` profile in launchSettings.json):
+# Scalar UI: {{base}}/scalar  |  OpenAPI: {{base}}/openapi/v1.json
+# Demo users (seeded): demo@minibank.local / Demo123!  and  sara@minibank.local / Demo123!
+@token = YOUR_BEARER_TOKEN
+@accountId = YOUR_ACCOUNT_ID
+
+### Health (always mapped)
+GET {{base}}/health
+Accept: application/json
+
+### OpenAPI document (all environments)
+GET {{base}}/openapi/v1.json
+Accept: application/json
+
+### Register a new customer (anonymous, replaces disabled /register)
+POST {{base}}/customers
+Content-Type: application/json
+
+{
+  "email": "new.user@test.com",
+  "password": "Demo123!",
+  "fullName": "New User",
+  "phoneNumber": "09123456789"
+}
+
+### Login (Identity API, bearer token)
+POST {{base}}/login
+Content-Type: application/json
+
+{
+  "email": "demo@minibank.local",
+  "password": "Demo123!"
+}
+
+### My profile
+GET {{base}}/customers
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### My accounts with balances
+GET {{base}}/accounts
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Statement (paged)
+GET {{base}}/accounts/{{accountId}}/statement?page=1&pageSize=20
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Deposit (idempotent — reuse key returns same tx; different amount => 409)
+POST {{base}}/accounts/{{accountId}}/deposit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 100,
+  "idempotencyKey": "demo-deposit-manual-1"
+}
+
+### Withdraw
+POST {{base}}/accounts/{{accountId}}/withdraw
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 50,
+  "idempotencyKey": "demo-withdraw-manual-1"
+}
+
+### Transfer (source must be owned by caller)
+POST {{base}}/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fromAccountId": "{{accountId}}",
+  "toAccountId": "00000000-0000-0000-0000-000000000000",
+  "amount": 25,
+  "idempotencyKey": "demo-transfer-manual-1"
+}
