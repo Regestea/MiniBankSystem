@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiniBank.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(MiniBankDbContext))]
-    [Migration("20260902173357_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260904121556_AddOutboxMessages")]
+    partial class AddOutboxMessages
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -270,6 +270,140 @@ namespace MiniBank.Infrastructure.Persistence.Migrations
                     b.ToTable("accounts", (string)null);
                 });
 
+            modelBuilder.Entity("MiniBank.Domain.AuditAggregate.AuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("audit_id");
+
+                    b.Property<short>("Action")
+                        .HasColumnType("smallint")
+                        .HasColumnName("action");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<string>("NewValues")
+                        .HasColumnType("text")
+                        .HasColumnName("new_values");
+
+                    b.Property<string>("OldValues")
+                        .HasColumnType("text")
+                        .HasColumnName("old_values");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_email");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id")
+                        .HasName("pk_audit_logs");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_audit_created");
+
+                    b.HasIndex("EntityType")
+                        .HasDatabaseName("ix_audit_entity_type");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_audit_user");
+
+                    b.HasIndex("EntityType", "EntityId")
+                        .HasDatabaseName("ix_audit_entity");
+
+                    b.ToTable("audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("MiniBank.Domain.BuildingBlocks.OutboxMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Error")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("error");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("event_type");
+
+                    b.Property<DateTimeOffset>("OccurredOn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_on");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload");
+
+                    b.Property<DateTimeOffset?>("ProcessedOn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("processed_on");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("retry_count");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EventType")
+                        .HasDatabaseName("ix_outbox_messages_event_type");
+
+                    b.HasIndex("ProcessedOn", "OccurredOn")
+                        .HasDatabaseName("ix_outbox_messages_processing");
+
+                    b.ToTable("outbox_messages", (string)null);
+                });
+
             modelBuilder.Entity("MiniBank.Domain.CustomerAggregate.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -319,6 +453,201 @@ namespace MiniBank.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_customers_email");
 
                     b.ToTable("customers", (string)null);
+                });
+
+            modelBuilder.Entity("MiniBank.Domain.DocumentAggregate.Document", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("document_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("file_size");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<short>("Status")
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("storage_path");
+
+                    b.Property<short>("Type")
+                        .HasColumnType("smallint")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTimeOffset?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verified_at");
+
+                    b.Property<Guid?>("VerifiedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("verified_by");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_documents");
+
+                    b.HasIndex("CustomerId")
+                        .HasDatabaseName("ix_documents_customer");
+
+                    b.ToTable("documents", (string)null);
+                });
+
+            modelBuilder.Entity("MiniBank.Domain.KycAggregate.KycVerification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("kyc_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<Guid?>("PrimaryDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("primary_document_id");
+
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<DateTimeOffset?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reviewed_at");
+
+                    b.Property<Guid?>("ReviewedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reviewed_by");
+
+                    b.Property<short>("Status")
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_kyc_verifications");
+
+                    b.HasIndex("CustomerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_kyc_customer");
+
+                    b.HasIndex("PrimaryDocumentId")
+                        .HasDatabaseName("ix_kyc_primary_document");
+
+                    b.ToTable("kyc_verifications", (string)null);
+                });
+
+            modelBuilder.Entity("MiniBank.Domain.RiskAggregate.CustomerRisk", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("risk_id");
+
+                    b.Property<decimal>("AmountToday")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount_today");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<int>("DailyTransactionCountLimit")
+                        .HasColumnType("integer")
+                        .HasColumnName("daily_transaction_count_limit");
+
+                    b.Property<decimal>("DailyTransactionLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("daily_transaction_limit");
+
+                    b.Property<DateTimeOffset>("LastResetDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_reset_date");
+
+                    b.Property<short>("RiskLevel")
+                        .HasColumnType("smallint")
+                        .HasColumnName("risk_level");
+
+                    b.Property<int>("TransactionsToday")
+                        .HasColumnType("integer")
+                        .HasColumnName("transactions_today");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_customer_risks");
+
+                    b.HasIndex("CustomerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_risk_customer");
+
+                    b.ToTable("customer_risks", (string)null);
                 });
 
             modelBuilder.Entity("MiniBank.Domain.TransactionAggregate.Transaction", b =>
@@ -375,13 +704,18 @@ namespace MiniBank.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_transactions");
 
-                    b.HasIndex("DestinationAccountId");
+                    b.HasIndex("DestinationAccountId")
+                        .HasDatabaseName("ix_transactions_destination_account");
+
+                    b.HasIndex("OccurredOn")
+                        .HasDatabaseName("ix_transactions_occurred_on");
 
                     b.HasIndex("ReferenceId")
                         .IsUnique()
                         .HasDatabaseName("ux_transactions_reference");
 
-                    b.HasIndex("SourceAccountId");
+                    b.HasIndex("SourceAccountId")
+                        .HasDatabaseName("ix_transactions_source_account");
 
                     b.ToTable("transactions", null, t =>
                         {
@@ -444,6 +778,13 @@ namespace MiniBank.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("MiniBank.Domain.AccountAggregate.Account", b =>
                 {
+                    b.HasOne("MiniBank.Domain.CustomerAggregate.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_accounts_customer");
+
                     b.OwnsMany("MiniBank.Domain.Ledger.LedgerEntry", "Ledger", b1 =>
                         {
                             b1.Property<Guid>("AccountId")
@@ -479,8 +820,9 @@ namespace MiniBank.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("AccountId", "Id");
 
-                            b1.HasIndex("ReferenceId")
-                                .HasDatabaseName("ix_ledger_reference");
+                            b1.HasIndex("AccountId", "ReferenceId")
+                                .IsUnique()
+                                .HasDatabaseName("ux_ledger_account_reference");
 
                             b1.HasIndex("AccountId", "OccurredOn", "Id")
                                 .HasDatabaseName("ix_ledger_account_time");
