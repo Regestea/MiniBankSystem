@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  CONFIGURATION: Release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore MiniBankSystem.sln
+
+      - name: Build
+        run: dotnet build MiniBankSystem.sln --no-restore --configuration ${{ env.CONFIGURATION }}
+
+      - name: Run Architecture Tests
+        run: dotnet test Backend.Tests/MiniBank.Architecture.Tests --no-build --configuration ${{ env.CONFIGURATION }} --verbosity normal
+
+      - name: Run Domain Tests
+        run: dotnet test Backend.Tests/MiniBank.Domain.Tests --no-build --configuration ${{ env.CONFIGURATION }} --verbosity normal
+
+      - name: Run Features Tests
+        run: dotnet test Backend.Tests/MiniBank.Features.Tests --no-build --configuration ${{ env.CONFIGURATION }} --verbosity normal
+
+      # NOTE: Infrastructure tests use Testcontainers (postgres:18.6-alpine) with real
+      # migrations — no external postgres service needed. Docker is available on
+      # ubuntu-latest runners. Api tests use EF InMemory + mocked mediator.
+      - name: Run Infrastructure Tests
+        run: dotnet test Backend.Tests/MiniBank.Infrastructure.Tests --no-build --configuration ${{ env.CONFIGURATION }} --verbosity normal
+
+      - name: Run API Integration Tests
+        run: dotnet test Backend.Tests/MiniBank.Api.Tests --no-build --configuration ${{ env.CONFIGURATION }} --verbosity normal
