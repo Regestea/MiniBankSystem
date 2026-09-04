@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using MiniBank.Features.Customers;
 using MiniBank.Features.Customers.GetCurrentCustomer;
 using MiniBank.Features.Customers.GetCustomer;
@@ -20,9 +21,10 @@ namespace MiniBank.Api.Controllers;
 [Produces("application/json")]
 public sealed class CustomersController(IMediator mediator) : ControllerBase
 {
-    /// <summary>Registers a new customer — atomically creates IdentityUser + Customer profile. (Anonymous)</summary>
+    /// <summary>Registers a new customer — two-phase (IdentityUser, then Customer profile with compensation). (Anonymous)</summary>
     [HttpPost]
     [AllowAnonymous]
+    [EnableRateLimiting("auth_endpoints")]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -52,7 +54,7 @@ public sealed class CustomersController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<CustomerDetailResponse>> GetById(Guid id, CancellationToken cancellationToken)
         => Ok(await mediator.Send(new GetCustomerQuery(id), cancellationToken));
 
-    /// <summary>Updates a customer profile. Only the owner can update (self-service).</summary>
+    /// <summary>Updates a customer profile. Owners update their own; admins may update any.</summary>
     [HttpPut("{id:guid}")]
     [Authorize]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]

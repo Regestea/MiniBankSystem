@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using MiniBank.Features.Accounts;
+using MiniBank.Features.Accounts.ApproveAccount;
 using MiniBank.Features.Accounts.FreezeAccount;
+using MiniBank.Features.Accounts.RejectAccount;
 using MiniBank.Features.Accounts.UnfreezeAccount;
 using MiniBank.Features.Customers;
 using MiniBank.Features.Customers.BlockCustomer;
@@ -10,6 +13,9 @@ using MiniBank.Features.Customers.ListCustomers;
 using MiniBank.Features.Customers.VerifyCustomer;
 using MiniBank.Features.Messaging;
 using MiniBank.Features.Reports.GetBankReport;
+using MiniBank.Features.Reports.GetCustomerReport;
+using MiniBank.Features.Reports.GetKycReport;
+using MiniBank.Features.Reports.GetTransactionReport;
 
 namespace MiniBank.Api.Controllers;
 
@@ -20,6 +26,7 @@ namespace MiniBank.Api.Controllers;
 [ApiController]
 [Route("admin")]
 [Authorize(Roles = "Admin")]
+[EnableRateLimiting("admin_endpoints")]
 [Produces("application/json")]
 public sealed class AdminController(IMediator mediator) : ControllerBase
 {
@@ -54,6 +61,23 @@ public sealed class AdminController(IMediator mediator) : ControllerBase
 
     // ── Accounts management ─────────────────────────────────────────────
 
+    /// <summary>Approves a pending account. [Admin]</summary>
+    [HttpPost("accounts/{id:guid}/approve")]
+    [ProducesResponseType(typeof(ApproveAccountResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApproveAccountResponse>> ApproveAccount(Guid id, CancellationToken cancellationToken)
+        => Ok(await mediator.Send(new ApproveAccountCommand(id), cancellationToken));
+
+    /// <summary>Rejects a pending account. [Admin]</summary>
+    [HttpPost("accounts/{id:guid}/reject")]
+    [ProducesResponseType(typeof(RejectAccountResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<RejectAccountResponse>> RejectAccount(Guid id, [FromBody] RejectAccountRequest request, CancellationToken cancellationToken)
+        => Ok(await mediator.Send(new RejectAccountCommand(id, request.Reason), cancellationToken));
+
     /// <summary>Freezes an account. [Admin]</summary>
     [HttpPost("accounts/{id:guid}/freeze")]
     [ProducesResponseType(typeof(AccountStatusResponse), StatusCodes.Status200OK)]
@@ -77,4 +101,24 @@ public sealed class AdminController(IMediator mediator) : ControllerBase
     [ProducesResponseType(typeof(BankReportResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<BankReportResponse>> BankReport(CancellationToken cancellationToken)
         => Ok(await mediator.Send(new GetBankReportQuery(), cancellationToken));
+
+    /// <summary>Customer report (status breakdown, KYC stats). [Admin]</summary>
+    [HttpGet("reports/customers")]
+    [ProducesResponseType(typeof(CustomerReportResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<CustomerReportResponse>> CustomerReport(CancellationToken cancellationToken)
+        => Ok(await mediator.Send(new GetCustomerReportQuery(), cancellationToken));
+
+    /// <summary>Transaction report (totals, daily volume). [Admin]</summary>
+    [HttpGet("reports/transactions")]
+    [ProducesResponseType(typeof(TransactionReportResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TransactionReportResponse>> TransactionReport([FromQuery] GetTransactionReportQuery query, CancellationToken cancellationToken)
+        => Ok(await mediator.Send(query, cancellationToken));
+
+    /// <summary>KYC report (verification stats). [Admin]</summary>
+    [HttpGet("reports/kyc")]
+    [ProducesResponseType(typeof(KycReportResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<KycReportResponse>> KycReport(CancellationToken cancellationToken)
+        => Ok(await mediator.Send(new GetKycReportQuery(), cancellationToken));
 }
+
+public sealed record RejectAccountRequest(string Reason);

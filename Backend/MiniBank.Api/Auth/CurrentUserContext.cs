@@ -24,7 +24,10 @@ internal sealed class CurrentUserContext(IHttpContextAccessor httpContextAccesso
                       ?? principal.FindFirstValue("sub")
                       ?? throw new UnauthorizedAccessException("User is not authenticated.");
 
-            _userId = Guid.Parse(sub);
+            if (!Guid.TryParse(sub, out var parsed))
+                throw new UnauthorizedAccessException("User is not authenticated.");
+
+            _userId = parsed;
             return _userId.Value;
         }
     }

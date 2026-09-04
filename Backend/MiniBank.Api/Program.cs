@@ -35,18 +35,57 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddOpenApi();
 
+builder.Services.AddCors(options =>
+            {
+                var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+                if (origins is null)
+                {
+                    if (builder.Environment.IsDevelopment())
+                    {
+                        origins = ["http://localhost:3000", "http://localhost:5173"];
+                    }
+                    else
+                    {
+                        // In production without config: log warning at startup, don't add CORS policy.
+                        // Cross-origin requests will be blocked by browsers (secure default).
+                        // App starts successfully — ops can set CORS__AllowedOrigins and restart.
+                        return; // Skip adding policy
+                    }
+                }
+
+                options.AddPolicy("AllowFrontend", policy =>
+                {
+                    policy.WithOrigins(origins ?? [])
+                          .AllowCredentials()
+                          .WithHeaders("Authorization", "Content-Type", "Accept", "X-CSRF-TOKEN")
+                          .WithMethods("GET", "POST", "PUT", "DELETE");
+                });
+            });
+
+        // Rate limiting protection
+        builder.AddCustomRateLimiting();
+
+        // NOTE: no antiforgery/CSRF here by design. This API authenticates with
+        // Authorization: Bearer tokens (not cookies), so cross-site request forgery
+        // does not apply. Adding [ValidateAntiForgeryToken] to bearer endpoints
+        // would be cargo-cult security and would force a test/prod divergence.
+
         var app = builder.Build();
 
         app.MapDefaultEndpoints();
 
-        // Apply migrations on every startup (per plan); seeding only where configured.
-        await app.Services.MigrateDatabaseAsync();
+        // OpenAPI document in ALL environments (reviewers/ops need it in Production too).
+        // Scalar UI + auto-migrate + seed stay Development-only — never in Production.
+        app.MapOpenApi();
+
         if (app.Environment.IsDevelopment())
         {
-            app.MapOpenApi();
+            await app.Services.MigrateDatabaseAsync();
             await using var scope = app.Services.CreateAsyncScope();
             var seeder = scope.ServiceProvider.GetRequiredService<AdminSeeder>();
             await seeder.SeedAsync();
+            var demoSeeder = scope.ServiceProvider.GetRequiredService<DemoSeeder>();
+            await demoSeeder.SeedAsync();
 
             app.MapScalarApiReference(options =>
             {
@@ -58,12 +97,17 @@ public class Program
         }
 
         app.UseHttpsRedirection();
+        app.UseCors("AllowFrontend");
         app.UseDomainExceptionHandling();
+        // Rate limiting is time-window based and would make API tests flaky/order-dependent
+        // (e.g. 11 anonymous admin 401 probes vs a 5/min anon budget → 429). Skipped in Testing only.
+        if (!app.Environment.IsEnvironment("Testing"))
+            app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
 
         // Identity endpoints (login/refresh/2fa/forgot/reset/...) with /register disabled —
-        // registration goes through POST /customers (atomic IdentityUser + Customer).
+        // registration goes through POST /customers (two-phase IdentityUser + Customer, see RegisterCustomerHandler).
         app.MapIdentityApiWithRegistrationGuard<IdentityUser<Guid>>();
         app.MapControllers();
 
