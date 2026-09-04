@@ -3,21 +3,24 @@ using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
+using MiniBank.Domain.RiskAggregate;
 using MiniBank.Features.Customers;
 using MiniBank.Features.Messaging;
+using Microsoft.Extensions.Logging;
 
 namespace MiniBank.Features.Customers.RegisterCustomer;
 
 /// <summary>
-/// Atomically registers a new customer: creates both the ASP.NET Identity user
-/// and the Customer aggregate using a single shared Guid. Both entities are staged
-/// in the EF Core change tracker and persisted in a single SaveChangesAsync call,
-/// ensuring an atomic transaction.
+/// Registers a new customer in two phases (Identity persists immediately via UserManager,
+/// then Customer + CustomerRisk persist in one SaveChanges). Shares one Guid across all three.
+/// If the second phase fails, compensates by deleting the orphan IdentityUser.
 /// </summary>
 internal sealed class RegisterCustomerHandler(
     ICustomerRepository customers,
+    IRiskRepository riskRepo,
     IIdentityUserService identityUsers,
-    IUnitOfWork unitOfWork) : ICommandHandler<RegisterCustomerCommand, CustomerResponse>
+    IUnitOfWork unitOfWork,
+    ILogger<RegisterCustomerHandler> logger) : ICommandHandler<RegisterCustomerCommand, CustomerResponse>
 {
     public async Task<CustomerResponse> HandleAsync(RegisterCustomerCommand command, CancellationToken cancellationToken = default)
     {
@@ -28,20 +31,41 @@ internal sealed class RegisterCustomerHandler(
         if (await customers.EmailExistsAsync(email, cancellationToken))
             throw new DomainConflictException(nameof(email), "Email already registered as a customer.");
 
-        // Stage IdentityUser creation (UserManager.CreateAsync does NOT call SaveChanges)
         await identityUsers.CreateUserAsync(customerId.Value, command.Email, command.Password, cancellationToken);
 
-        // Create Customer aggregate with the same Guid (1:1 same-Guid invariant)
         var customer = Customer.Create(command.FullName, email, command.PhoneNumber, customerId);
 
         await customers.AddAsync(customer, cancellationToken);
 
-        // Single SaveChangesAsync persists both IdentityUser + Customer atomically
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var risk = CustomerRisk.Create(customerId.Value);
+        await riskRepo.AddAsync(risk, cancellationToken);
 
-        // Non-critical: assign "User" role after the atomic save. If this fails the
-        // UserRoleClaimsTransformation still grants the implicit role on next sign-in.
-        await identityUsers.EnsureUserRoleAsync(customerId.Value, cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            // Phase 2 failed after phase 1 committed: remove the orphan IdentityUser (best-effort).
+            try { await identityUsers.DeleteUserAsync(customerId.Value, cancellationToken); }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Compensation failed: orphan IdentityUser {CustomerId} may remain.", customerId.Value);
+            }
+            throw;
+        }
+
+        // Role assignment is outside the atomic transaction but has a fallback:
+        // UserRoleClaimsTransformation grants "User" claim implicitly when no role claims exist.
+        try
+        {
+            await identityUsers.EnsureUserRoleAsync(customerId.Value, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to assign role to user {CustomerId} after registration. " +
+                "UserRoleClaimsTransformation will provide fallback access.", customerId.Value);
+        }
 
         return CustomerResponse.From(customer);
     }

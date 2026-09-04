@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using MiniBank.Abstractions;
 using MiniBank.Features.Customers;
 using MiniBank.Features.Messaging;
 
@@ -16,6 +17,7 @@ public static class ConfigureServices
         services.AddScoped<ISender>(sp => sp.GetRequiredService<Mediator>());
         services.AddScoped<IPublisher>(sp => sp.GetRequiredService<Mediator>());
         services.AddScoped<ICustomerAccessGuard, CustomerAccessGuard>();
+        services.AddScoped<IAccessGuard, AccessGuard>();
 
         var assembly = typeof(ConfigureServices).Assembly;
         var handlerInterfaces = new[]

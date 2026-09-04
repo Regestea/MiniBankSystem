@@ -1,4 +1,5 @@
 using MiniBank.Domain.AccountAggregate;
+using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
@@ -25,9 +26,14 @@ internal sealed class OpenAccountHandler(
             throw new DomainOperationNotAllowedException(nameof(customer.Status),
                 $"Only verified customers can open accounts. Current status: {customer.Status}.");
 
-        var accountType = command.AccountType == "Savings"
-            ? AccountType.Savings
-            : AccountType.Current;
+        var accountType = command.AccountType switch
+        {
+            "Savings" => AccountType.Savings,
+            "Current" => AccountType.Current,
+            // Validator rejects anything else, but handlers must never silently fall back
+            // when called directly (mediator bypass in tests/other callers).
+            _ => throw new DomainValidationException(nameof(command.AccountType), "AccountType must be 'Current' or 'Savings'.")
+        };
 
         var account = Account.Open(customer.Id, accountType);
 

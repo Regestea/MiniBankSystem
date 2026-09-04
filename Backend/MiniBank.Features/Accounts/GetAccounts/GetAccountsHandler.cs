@@ -23,7 +23,8 @@ internal sealed class GetAccountsHandler(ISqlConnectionFactory connectionFactory
         LEFT   JOIN ledger_entries e ON e.account_id = a.account_id
         WHERE  a.customer_id = @UserId
         GROUP  BY a.account_id, a.account_number, a.account_type, a.status, a.created_at
-        ORDER  BY a.created_at;
+        ORDER  BY a.created_at
+        OFFSET @Offset LIMIT @Limit;
         """;
 
     public async Task<IReadOnlyList<AccountDto>> HandleAsync(GetAccountsQuery query, CancellationToken cancellationToken = default)
@@ -31,7 +32,7 @@ internal sealed class GetAccountsHandler(ISqlConnectionFactory connectionFactory
         using var connection = connectionFactory.CreateOpenConnection();
 
         var rows = await connection.QueryAsync<AccountDto>(
-            new CommandDefinition(Sql, new { UserId = currentUser.UserId, CreditTypes }, cancellationToken: cancellationToken));
+            new CommandDefinition(Sql, new { UserId = currentUser.UserId, CreditTypes, Offset = (query.Page - 1) * query.PageSize, Limit = query.PageSize }, cancellationToken: cancellationToken));
 
         return rows.ToList();
     }

@@ -35,8 +35,10 @@ internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactor
 
     public async Task<StatementResponse> HandleAsync(GetStatementQuery query, CancellationToken cancellationToken = default)
     {
-        var page = Math.Max(1, query.Page);
-        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+        // Fail-fast on invalid paging: validator rejects Page < 1 / PageSize outside 1..100.
+        // No silent Clamp — callers get 400 instead of a coerced page.
+        var page = query.Page;
+        var pageSize = query.PageSize;
 
         using var connection = connectionFactory.CreateOpenConnection();
 

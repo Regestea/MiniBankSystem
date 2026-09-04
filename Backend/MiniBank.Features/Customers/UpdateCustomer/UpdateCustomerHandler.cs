@@ -8,7 +8,7 @@ using MiniBank.Features.Messaging;
 
 namespace MiniBank.Features.Customers.UpdateCustomer;
 
-/// <summary>Updates a customer's profile. Only the owner can update it (self-service).</summary>
+/// <summary>Updates a customer's profile. Owners update their own; admins may update any (consistent with GetCustomer).</summary>
 internal sealed class UpdateCustomerHandler(
     ICustomerRepository customers,
     ICurrentUserContext currentUser,
@@ -16,10 +16,10 @@ internal sealed class UpdateCustomerHandler(
 {
     public async Task<CustomerResponse> HandleAsync(UpdateCustomerCommand command, CancellationToken cancellationToken = default)
     {
-        if (command.CustomerId != currentUser.UserId)
+        if (!currentUser.IsAdmin && command.CustomerId != currentUser.UserId)
             throw new ForbiddenException("customer", "Profile can only be updated by its owner.");
 
-        var customerId = new CustomerId(currentUser.UserId);
+        var customerId = new CustomerId(command.CustomerId);
 
         var customer = await customers.GetByIdAsync(customerId, cancellationToken)
             ?? throw new NotFoundException("customer", customerId);

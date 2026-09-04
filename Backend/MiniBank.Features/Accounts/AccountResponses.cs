@@ -25,8 +25,8 @@ public sealed record TransferResponse(
     Guid TransactionId,
     decimal Amount,
     string ReferenceId,
-    Guid FromLedgerEntryId,
-    Guid ToLedgerEntryId,
+    Guid FromAccountId,
+    Guid ToAccountId,
     DateTimeOffset OccurredOn);
 
 public sealed record AccountStatusResponse(Guid AccountId, string Status, int Version);
