@@ -30,6 +30,12 @@ public sealed class AdminSeeder(
         var email = section["Email"];
         var password = section["Password"];
 
+        // Fall back to environment variables if config placeholders are empty
+        if (string.IsNullOrWhiteSpace(email) || email.Contains("${"))
+            email = Environment.GetEnvironmentVariable("ADMIN_EMAIL");
+        if (string.IsNullOrWhiteSpace(password) || password.Contains("${"))
+            password = Environment.GetEnvironmentVariable("ADMIN_PASSWORD");
+
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             return; // nothing to seed
 

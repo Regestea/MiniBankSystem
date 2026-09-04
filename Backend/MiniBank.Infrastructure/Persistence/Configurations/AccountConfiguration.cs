@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AccountAggregate.ValueObjects;
 using MiniBank.Domain.BuildingBlocks.ValueObjects;
+using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.CustomerAggregate.ValueObjects;
 
 namespace MiniBank.Infrastructure.Persistence.Configurations;
@@ -40,6 +41,11 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasConversion<short>()
             .IsRequired();
 
+        b.Property(a => a.BalanceAmount)
+            .HasColumnName("balance_amount")
+            .HasPrecision(18, 2)
+            .IsRequired();
+
         b.Property(a => a.Version)
             .HasColumnName("version")
             .IsConcurrencyToken();
@@ -49,6 +55,15 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
         b.HasIndex(a => a.AccountNumber).IsUnique().HasDatabaseName("ux_accounts_number");
         b.HasIndex(a => a.CustomerId).HasDatabaseName("ix_accounts_customer");
+
+        // Prevent orphan accounts: every account must belong to an existing customer.
+        // Restrict (not Cascade) so deleting a customer with accounts fails loudly
+        // instead of silently wiping money.
+        b.HasOne<Customer>()
+            .WithMany()
+            .HasForeignKey(a => a.CustomerId)
+            .HasConstraintName("fk_accounts_customer")
+            .OnDelete(DeleteBehavior.Restrict);
 
         b.OwnsMany(a => a.Ledger, lb =>
         {
@@ -81,7 +96,7 @@ internal sealed class AccountConfiguration : IEntityTypeConfiguration<Account>
 
             lb.HasIndex(e => new { e.AccountId, e.OccurredOn, e.Id })
               .HasDatabaseName("ix_ledger_account_time");
-            lb.HasIndex(e => e.ReferenceId).HasDatabaseName("ix_ledger_reference");
+            lb.HasIndex(e => new { e.AccountId, e.ReferenceId }).IsUnique().HasDatabaseName("ux_ledger_account_reference");
         });
 
         b.Navigation(a => a.Ledger).UsePropertyAccessMode(PropertyAccessMode.Field);

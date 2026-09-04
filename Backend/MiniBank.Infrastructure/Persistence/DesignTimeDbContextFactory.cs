@@ -8,8 +8,11 @@ public sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Min
 {
     public MiniBankDbContext CreateDbContext(string[] args)
     {
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__minibankdb")
+            ?? "Host=localhost;Port=5432;Database=minibankdb;Username=postgres;Password=postgres";
+
         var options = new DbContextOptionsBuilder<MiniBankDbContext>()
-            .UseNpgsql("Host=localhost;Port=5432;Database=minibankdb;Username=postgres;Password=postgres")
+            .UseNpgsql(connectionString)
             .Options;
 
         return new MiniBankDbContext(options);

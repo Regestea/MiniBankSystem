@@ -40,11 +40,15 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
 
         b.Property(x => x.SourceAccountId)
             .HasColumnName("source_account_id")
-            .HasConversion(id => id!.Value, g => new AccountId(g));
+            .HasConversion(
+                id => id == null ? (Guid?)null : id.Value,
+                g => g == null ? null : new AccountId(g.Value));
 
         b.Property(x => x.DestinationAccountId)
             .HasColumnName("destination_account_id")
-            .HasConversion(id => id!.Value, g => new AccountId(g));
+            .HasConversion(
+                id => id == null ? (Guid?)null : id.Value,
+                g => g == null ? null : new AccountId(g.Value));
 
         b.Property(x => x.OccurredOn).HasColumnName("occurred_on").IsRequired();
         b.Property(x => x.ReferenceId).HasColumnName("reference_id").HasMaxLength(64).IsRequired();
@@ -60,6 +64,10 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         b.Ignore(x => x.Postings);
 
         b.HasIndex(x => x.ReferenceId).IsUnique().HasDatabaseName("ux_transactions_reference");
+        b.HasIndex(x => x.SourceAccountId).HasDatabaseName("ix_transactions_source_account");
+        b.HasIndex(x => x.DestinationAccountId).HasDatabaseName("ix_transactions_destination_account");
+        // Range-scan index for transaction reports (GetTransactionReport filters occurred_on).
+        b.HasIndex(x => x.OccurredOn).HasDatabaseName("ix_transactions_occurred_on");
 
         b.HasOne<Account>()
             .WithMany()
