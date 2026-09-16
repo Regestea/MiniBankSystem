@@ -78,11 +78,13 @@ public sealed class DemoSeeder(
 
     private async Task<IdentityUser<Guid>?> EnsureUserAsync(Guid userId, string email, CancellationToken ct)
     {
-        var existing = await userManager.FindByIdAsync(userId.ToString());
+        var existing = await userManager.FindByIdAsync(userId.ToString())
+            ?? await userManager.FindByEmailAsync(email);
         if (existing is not null)
+        {
+            await EnsureRoleAsync(existing, ct);
             return existing;
-        if (await userManager.FindByEmailAsync(email) is not null)
-            return await userManager.FindByEmailAsync(email);
+        }
 
         var user = new IdentityUser<Guid>
         {
@@ -99,8 +101,29 @@ public sealed class DemoSeeder(
             return null;
         }
 
-        await userManager.AddToRoleAsync(user, "User");
+        // UserStore runs with AutoSaveChanges=false, so the INSERT above is only staged.
+        // Flush it before AddToRoleAsync: its internal UpdateAsync would otherwise flip the
+        // pending Added state to Modified, dropping the INSERT and failing with FK 23503
+        // on AspNetUserRoles.
+        await db.SaveChangesAsync(ct);
+        await EnsureRoleAsync(user, ct);
         return user;
+    }
+
+    private async Task EnsureRoleAsync(IdentityUser<Guid> user, CancellationToken ct)
+    {
+        if (await userManager.IsInRoleAsync(user, "User"))
+            return;
+
+        var roleResult = await userManager.AddToRoleAsync(user, "User");
+        if (!roleResult.Succeeded)
+        {
+            logger.LogWarning("DemoSeeder: could not assign role to {Email}: {Errors}",
+                user.Email, string.Join("; ", roleResult.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     private async Task<Customer?> EnsureCustomerAsync(Guid customerId, string fullName, string email, string phone, CancellationToken ct)

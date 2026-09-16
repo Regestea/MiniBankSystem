@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiniBank.Infrastructure.Migrations
 {
     [DbContext(typeof(MiniBankDbContext))]
-    [Migration("20260904063819_SampleHardening")]
-    partial class SampleHardening
+    [Migration("20260916171518_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -235,6 +235,11 @@ namespace MiniBank.Infrastructure.Migrations
                     b.Property<short>("AccountType")
                         .HasColumnType("smallint")
                         .HasColumnName("account_type");
+
+                    b.Property<decimal>("BalanceAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("balance_amount");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")

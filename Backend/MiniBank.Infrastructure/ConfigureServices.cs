@@ -15,7 +15,6 @@ using MiniBank.Domain.TransactionAggregate;
 using MiniBank.Abstractions;
 using MiniBank.Infrastructure.Exceptions;
 using MiniBank.Infrastructure.Identity;
-using MiniBank.Infrastructure.Messaging;
 using MiniBank.Infrastructure.Persistence;
 using MiniBank.Infrastructure.Persistence.Repositories;
 
@@ -77,9 +76,6 @@ public static class ConfigureServices
         });
         builder.Services.AddScoped<AdminSeeder>();
         builder.Services.AddScoped<DemoSeeder>();
-
-        // Outbox processor for reliable domain event dispatch
-        builder.Services.AddHostedService<OutboxProcessor>();
 
         // Identity reconciliation for orphan IdentityUsers from failed two-phase registrations
         builder.Services.AddHostedService<IdentityReconciliationService>();

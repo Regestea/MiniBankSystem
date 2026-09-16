@@ -17,7 +17,7 @@ namespace MiniBank.Infrastructure.Tests.Persistence;
 /// <summary>
 /// Verifies EfUnitOfWork persists domain events correctly:
 /// - Audit events → audit_logs table
-/// - Integration events → outbox_messages table (processed by OutboxProcessor)
+/// - Non-audit events (e.g. MoneyTransferredEvent) are discarded (no subscribers)
 /// </summary>
 [Collection("postgres")]
 public sealed class DomainEventDispatchTests
@@ -58,7 +58,7 @@ public sealed class DomainEventDispatchTests
     }
 
     [Fact]
-    public async Task SaveChangesAsync_CustomerCreatedEvent_NotInOutbox_BecauseAuditOnly()
+    public async Task SaveChangesAsync_NonAuditEvents_AreDiscarded()
     {
         await _fixture.ClearDomainTablesAsync();
 
@@ -77,39 +77,13 @@ public sealed class DomainEventDispatchTests
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
         var db = scope.ServiceProvider.GetRequiredService<MiniBankDbContext>();
 
-        // Clear outbox using test's own context
-        await db.Database.ExecuteSqlRawAsync(@"TRUNCATE TABLE ""outbox_messages"" CASCADE;");
-
         var customer = Customer.Create("No Handler", $"evt2_{Guid.NewGuid():N}@test.com", "09123456789", customerId);
         db.Customers.Add(customer);
 
         await uow.SaveChangesAsync();
 
-        // CustomerCreatedEvent is audit-only, should NOT be in outbox
-        var outboxMessages = await db.OutboxMessages.ToListAsync();
-        outboxMessages.Should().BeEmpty("CustomerCreatedEvent is audit-only, goes to audit_logs not outbox");
-    }
-
-    [Fact]
-    public async Task OutboxMessage_MarkProcessed_Updates_Status()
-    {
-        await _fixture.ClearDomainTablesAsync();
-
-        await using var ctx = _fixture.CreateContext();
-        await ctx.Database.ExecuteSqlRawAsync(@"TRUNCATE TABLE ""outbox_messages"" CASCADE;");
-        
-        var message = OutboxMessage.Create(
-            "TestEvent",
-            """{"test": "payload"}""",
-            DateTimeOffset.UtcNow);
-        
-        ctx.OutboxMessages.Add(message);
-        await ctx.SaveChangesAsync();
-
-        message.MarkProcessed();
-        await ctx.SaveChangesAsync();
-
-        var processed = await ctx.OutboxMessages.FirstAsync(m => m.Id == message.Id);
-        processed.ProcessedOn.Should().NotBeNull();
+        // CustomerCreatedEvent is audit-only: exactly one audit log, nothing else persisted.
+        var auditLogs = await db.AuditLogs.ToListAsync();
+        auditLogs.Should().HaveCount(1);
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MiniBank.Infrastructure.Persistence;
 
 namespace MiniBank.Infrastructure.Identity;
 
@@ -9,6 +10,7 @@ namespace MiniBank.Infrastructure.Identity;
 public sealed class AdminSeeder(
     RoleManager<IdentityRole<Guid>> roleManager,
     UserManager<IdentityUser<Guid>> userManager,
+    MiniBankDbContext db,
     ILogger<AdminSeeder> logger,
     IConfiguration configuration)
 {
@@ -47,8 +49,14 @@ public sealed class AdminSeeder(
 
         if (result.Succeeded)
         {
+            // UserStore runs with AutoSaveChanges=false, so the INSERT above is only staged.
+            // Flush it before AddToRoleAsync: its internal UpdateAsync would otherwise flip the
+            // pending Added state to Modified, dropping the INSERT and failing with FK 23503
+            // on AspNetUserRoles.
+            await db.SaveChangesAsync();
             await userManager.AddToRoleAsync(admin, AdminRole);
             await userManager.AddToRoleAsync(admin, UserRole);
+            await db.SaveChangesAsync();
             logger.LogInformation("Seeded admin user '{Email}' with roles Admin+User.", email);
         }
         else

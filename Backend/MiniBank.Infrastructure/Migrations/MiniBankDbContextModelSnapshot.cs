@@ -350,62 +350,6 @@ namespace MiniBank.Infrastructure.Migrations
                     b.ToTable("audit_logs", (string)null);
                 });
 
-            modelBuilder.Entity("MiniBank.Domain.BuildingBlocks.OutboxMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Error")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("error");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("event_type");
-
-                    b.Property<DateTimeOffset>("OccurredOn")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_on");
-
-                    b.Property<string>("Payload")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("payload");
-
-                    b.Property<DateTimeOffset?>("ProcessedOn")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("processed_on");
-
-                    b.Property<int>("RetryCount")
-                        .HasColumnType("integer")
-                        .HasColumnName("retry_count");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Version")
-                        .IsConcurrencyToken()
-                        .HasColumnType("integer")
-                        .HasColumnName("version");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EventType")
-                        .HasDatabaseName("ix_outbox_messages_event_type");
-
-                    b.HasIndex("ProcessedOn", "OccurredOn")
-                        .HasDatabaseName("ix_outbox_messages_processing");
-
-                    b.ToTable("outbox_messages", (string)null);
-                });
-
             modelBuilder.Entity("MiniBank.Domain.CustomerAggregate.Customer", b =>
                 {
                     b.Property<Guid>("Id")

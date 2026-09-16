@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AuditAggregate;
-using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.DocumentAggregate;
 using MiniBank.Domain.KycAggregate;
@@ -23,7 +22,6 @@ public sealed class MiniBankDbContext(DbContextOptions<MiniBankDbContext> option
     public DbSet<KycVerification> KycVerifications => Set<KycVerification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<CustomerRisk> CustomerRisks => Set<CustomerRisk>();
-    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

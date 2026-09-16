@@ -7,29 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MiniBank.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "accounts",
-                columns: table => new
-                {
-                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    customer_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    account_number = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    account_type = table.Column<short>(type: "smallint", nullable: false),
-                    status = table.Column<short>(type: "smallint", nullable: false),
-                    version = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_accounts", x => x.account_id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -177,64 +159,6 @@ namespace MiniBank.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ledger_entries",
-                columns: table => new
-                {
-                    ledger_entry_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    type = table.Column<short>(type: "smallint", nullable: false),
-                    occurred_on = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    reference_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
-                    description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ledger_entries", x => new { x.account_id, x.ledger_entry_id });
-                    table.ForeignKey(
-                        name: "FK_ledger_entries_accounts_account_id",
-                        column: x => x.account_id,
-                        principalTable: "accounts",
-                        principalColumn: "account_id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "transactions",
-                columns: table => new
-                {
-                    transaction_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    type = table.Column<short>(type: "smallint", nullable: false),
-                    amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    source_account_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    destination_account_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    occurred_on = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    reference_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
-                    description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    version = table.Column<int>(type: "integer", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_transactions", x => x.transaction_id);
-                    table.CheckConstraint("ck_transactions_amount_positive", "amount > 0");
-                    table.CheckConstraint("ck_transactions_sides", "(type = 2 AND source_account_id IS NOT NULL AND destination_account_id IS NOT NULL) OR (type IN (0,1) AND (source_account_id IS NULL) <> (destination_account_id IS NULL))");
-                    table.ForeignKey(
-                        name: "fk_transactions_destination_account",
-                        column: x => x.destination_account_id,
-                        principalTable: "accounts",
-                        principalColumn: "account_id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_transactions_source_account",
-                        column: x => x.source_account_id,
-                        principalTable: "accounts",
-                        principalColumn: "account_id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -340,6 +264,89 @@ namespace MiniBank.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "accounts",
+                columns: table => new
+                {
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    customer_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_number = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    account_type = table.Column<short>(type: "smallint", nullable: false),
+                    status = table.Column<short>(type: "smallint", nullable: false),
+                    balance_amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    version = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_accounts", x => x.account_id);
+                    table.ForeignKey(
+                        name: "fk_accounts_customer",
+                        column: x => x.customer_id,
+                        principalTable: "customers",
+                        principalColumn: "customer_id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ledger_entries",
+                columns: table => new
+                {
+                    ledger_entry_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    type = table.Column<short>(type: "smallint", nullable: false),
+                    occurred_on = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    reference_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ledger_entries", x => new { x.account_id, x.ledger_entry_id });
+                    table.ForeignKey(
+                        name: "FK_ledger_entries_accounts_account_id",
+                        column: x => x.account_id,
+                        principalTable: "accounts",
+                        principalColumn: "account_id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "transactions",
+                columns: table => new
+                {
+                    transaction_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    type = table.Column<short>(type: "smallint", nullable: false),
+                    amount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    source_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    destination_account_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    occurred_on = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    reference_id = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    version = table.Column<int>(type: "integer", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_transactions", x => x.transaction_id);
+                    table.CheckConstraint("ck_transactions_amount_positive", "amount > 0");
+                    table.CheckConstraint("ck_transactions_sides", "(type = 2 AND source_account_id IS NOT NULL AND destination_account_id IS NOT NULL) OR (type IN (0,1) AND (source_account_id IS NULL) <> (destination_account_id IS NULL))");
+                    table.ForeignKey(
+                        name: "fk_transactions_destination_account",
+                        column: x => x.destination_account_id,
+                        principalTable: "accounts",
+                        principalColumn: "account_id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_transactions_source_account",
+                        column: x => x.source_account_id,
+                        principalTable: "accounts",
+                        principalColumn: "account_id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "ix_accounts_customer",
                 table: "accounts",
@@ -426,6 +433,11 @@ namespace MiniBank.Infrastructure.Migrations
                 column: "customer_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_kyc_primary_document",
+                table: "kyc_verifications",
+                column: "primary_document_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ux_kyc_customer",
                 table: "kyc_verifications",
                 column: "customer_id",
@@ -446,6 +458,11 @@ namespace MiniBank.Infrastructure.Migrations
                 name: "ix_transactions_destination_account",
                 table: "transactions",
                 column: "destination_account_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_transactions_occurred_on",
+                table: "transactions",
+                column: "occurred_on");
 
             migrationBuilder.CreateIndex(
                 name: "ix_transactions_source_account",
@@ -484,9 +501,6 @@ namespace MiniBank.Infrastructure.Migrations
                 name: "customer_risks");
 
             migrationBuilder.DropTable(
-                name: "customers");
-
-            migrationBuilder.DropTable(
                 name: "documents");
 
             migrationBuilder.DropTable(
@@ -506,6 +520,9 @@ namespace MiniBank.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "accounts");
+
+            migrationBuilder.DropTable(
+                name: "customers");
         }
     }
 }

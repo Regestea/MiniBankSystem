@@ -1,9 +1,6 @@
-using System.Collections.Concurrent;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using MiniBank.Domain.AuditAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
@@ -14,18 +11,12 @@ namespace MiniBank.Infrastructure.Persistence;
 /// <summary>
 /// DI wrapper for <see cref="MiniBankDbContext"/> as <see cref="IUnitOfWork"/>.
 /// Audit logs are created inline (same transaction) before SaveChanges.
-/// Domain events are persisted to outbox table in the same transaction for reliability.
-/// A separate background processor reads the outbox and dispatches to handlers.
 /// </summary>
 internal sealed class EfUnitOfWork(
     MiniBankDbContext db,
-    IServiceProvider serviceProvider,
     ICurrentUserContext currentUser,
-    IHttpContextAccessor httpContextAccessor,
-    ILogger<EfUnitOfWork> logger) : IUnitOfWork
+    IHttpContextAccessor httpContextAccessor) : IUnitOfWork
 {
-    private static readonly ConcurrentDictionary<Type, Func<IServiceProvider, IDomainEvent, CancellationToken, Task>> Dispatchers = new();
-
     private (Guid UserId, string Email) GetCurrentUserSafe()
     {
         try
@@ -63,10 +54,6 @@ internal sealed class EfUnitOfWork(
         var auditLogs = BuildAuditLogs(domainEvents);
         if (auditLogs.Count > 0)
             await db.AuditLogs.AddRangeAsync(auditLogs, cancellationToken);
-
-        var outboxMessages = BuildOutboxMessages(domainEvents);
-        if (outboxMessages.Count > 0)
-            await db.OutboxMessages.AddRangeAsync(outboxMessages, cancellationToken);
 
         int result;
         try
@@ -230,8 +217,8 @@ internal sealed class EfUnitOfWork(
                         "KYC rejected", ipAddress),
 
                 // Money lifecycle events (Deposit/Withdraw/Transfer) are intentionally NOT audited:
-                // TransactionCreatedEvent above is the audit record. These remain as integration
-                // events for future subscribers (notifications/read models) via outbox.
+                // TransactionCreatedEvent above is the audit record. These have no subscribers
+                // and are simply discarded after collection.
                 Domain.TransactionAggregate.Events.MoneyDepositedEvent
                     or Domain.TransactionAggregate.Events.MoneyWithdrawnEvent
                     or Domain.TransactionAggregate.Events.MoneyTransferredEvent
@@ -245,56 +232,5 @@ internal sealed class EfUnitOfWork(
         }
 
         return logs;
-    }
-
-    private List<OutboxMessage> BuildOutboxMessages(List<IDomainEvent> domainEvents)
-    {
-        var messages = new List<OutboxMessage>();
-        var occurredOn = DateTimeOffset.UtcNow;
-
-        foreach (var domainEvent in domainEvents)
-        {
-            // Skip audit-only events (they're already persisted in audit_logs)
-            var isAuditOnly = domainEvent switch
-            {
-                Domain.CustomerAggregate.Events.CustomerCreatedEvent => true,
-                Domain.CustomerAggregate.Events.CustomerVerifiedEvent => true,
-                Domain.CustomerAggregate.Events.CustomerBlockedEvent => true,
-                Domain.CustomerAggregate.Events.CustomerUpdatedEvent => true,
-                Domain.AccountAggregate.Events.AccountOpenedEvent => true,
-                Domain.AccountAggregate.Events.AccountApprovedEvent => true,
-                Domain.AccountAggregate.Events.AccountRejectedEvent => true,
-                Domain.AccountAggregate.Events.AccountFrozenEvent => true,
-                Domain.AccountAggregate.Events.AccountUnfrozenEvent => true,
-                Domain.AccountAggregate.Events.AccountClosedEvent => true,
-                Domain.TransactionAggregate.Events.TransactionCreatedEvent => true,
-                Domain.RiskAggregate.Events.RiskLevelChangedEvent => true,
-                Domain.DocumentAggregate.Events.DocumentUploadedEvent => true,
-                Domain.DocumentAggregate.Events.DocumentVerifiedEvent => true,
-                Domain.DocumentAggregate.Events.DocumentRejectedEvent => true,
-                Domain.KycAggregate.Events.KycSubmittedEvent => true,
-                Domain.KycAggregate.Events.KycApprovedEvent => true,
-                Domain.KycAggregate.Events.KycRejectedEvent => true,
-                _ => false
-            };
-
-            if (isAuditOnly)
-                continue;
-
-            var payload = JsonSerializer.Serialize(domainEvent, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                WriteIndented = false
-            });
-
-            var message = OutboxMessage.Create(
-                domainEvent.GetType().Name,
-                payload,
-                occurredOn);
-
-            messages.Add(message);
-        }
-
-        return messages;
     }
 }
