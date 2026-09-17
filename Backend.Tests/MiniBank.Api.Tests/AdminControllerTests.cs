@@ -54,6 +54,15 @@ public class AdminControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
+    public async Task UpdateCustomer_Returns401_WhenNotAuthenticated()
+    {
+        var id = Guid.NewGuid();
+        var request = new { FullName = "Updated Name", PhoneNumber = "09123456789" };
+        var response = await _unauthClient.PutAsJsonAsync($"/admin/customers/{id}", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task ApproveAccount_Returns401_WhenNotAuthenticated()
     {
         var id = Guid.NewGuid();

@@ -2,11 +2,12 @@ using Dapper;
 using MiniBank.Abstractions;
 using MiniBank.Features.Messaging;
 
-namespace MiniBank.Features.Documents.ListCustomerDocuments;
+namespace MiniBank.Features.Documents.ListCurrentCustomerDocuments;
 
-internal sealed class ListCustomerDocumentsHandler(
+/// <summary>Lists the caller's own documents — identity from the token, no ownership guard needed.</summary>
+internal sealed class ListCurrentCustomerDocumentsHandler(
     ISqlConnectionFactory connectionFactory,
-    IAccessGuard accessGuard) : IQueryHandler<ListCustomerDocumentsQuery, ListCustomerDocumentsResponse>
+    ICurrentUserContext currentUser) : IQueryHandler<ListCurrentCustomerDocumentsQuery, ListCurrentCustomerDocumentsResponse>
 {
     private const string Sql = """
         SELECT document_id    AS DocumentId,
@@ -19,19 +20,17 @@ internal sealed class ListCustomerDocumentsHandler(
         ORDER BY created_at DESC
         """;
 
-    public async Task<ListCustomerDocumentsResponse> HandleAsync(ListCustomerDocumentsQuery query, CancellationToken cancellationToken = default)
+    public async Task<ListCurrentCustomerDocumentsResponse> HandleAsync(ListCurrentCustomerDocumentsQuery query, CancellationToken cancellationToken = default)
     {
-        await accessGuard.EnsureCustomerOwnershipAsync(query.CustomerId, cancellationToken);
-
         using var connection = connectionFactory.CreateOpenConnection();
 
         var rows = await connection.QueryAsync<DocumentRow>(
-            new CommandDefinition(Sql, new { query.CustomerId }, cancellationToken: cancellationToken));
+            new CommandDefinition(Sql, new { CustomerId = currentUser.UserId }, cancellationToken: cancellationToken));
 
         var items = rows.Select(r => new DocumentListItem(
             r.DocumentId, r.FileName, r.Type.ToString(), r.Status.ToString(), r.CreatedAt)).ToList();
 
-        return new ListCustomerDocumentsResponse(items);
+        return new ListCurrentCustomerDocumentsResponse(items);
     }
 
     private sealed record DocumentRow(

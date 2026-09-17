@@ -22,7 +22,7 @@ public class DomainEventTests
     public void DomainEvent_ImplementsIDomainEvent()
     {
         var e = new TestEvent(Guid.NewGuid());
-        Assert.IsAssignableFrom<IDomainEvent>(e);
+        Assert.IsType<IDomainEvent>(e, exactMatch: false);
         Assert.NotEqual(Guid.Empty, e.EventId);
         Assert.NotEqual(default, e.OccurredOn);
     }

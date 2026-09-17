@@ -107,7 +107,7 @@ builder.Services.AddCors(options =>
         app.UseAuthorization();
 
         // Identity endpoints (login/refresh/2fa/forgot/reset/...) with /register disabled —
-        // registration goes through POST /customers (two-phase IdentityUser + Customer, see RegisterCustomerHandler).
+        // registration goes through POST /customers or POST /customers/register (two-phase IdentityUser + Customer, see RegisterCustomerHandler).
         app.MapIdentityApiWithRegistrationGuard<IdentityUser<Guid>>();
         app.MapControllers();
 

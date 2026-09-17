@@ -8,7 +8,7 @@ namespace MiniBank.Domain.AccountAggregate.ValueObjects;
 /// AccountNumber — unique bank account identifier, e.g. IR-XXXXXXXXXX (10 digits) or 16-digit.
 /// For simplicity: 16-digit numeric string, first digit not zero.
 /// </summary>
-public sealed record AccountNumber
+public sealed partial record AccountNumber
 {
     public string Value { get; }
 
@@ -19,7 +19,7 @@ public sealed record AccountNumber
 
         value = value.Trim();
 
-        if (!Regex.IsMatch(value, @"^[1-9]\d{15}$"))
+        if (!MyRegex().IsMatch(value))
             throw new DomainValidationException(nameof(AccountNumber), "Account number must be 16 digits, first digit non-zero.");
 
         Value = value;
@@ -42,4 +42,6 @@ public sealed record AccountNumber
     public static implicit operator AccountNumber(string value) => new(value);
 
     public override string ToString() => Value;
+    [GeneratedRegex(@"^[1-9]\d{15}$")]
+    private static partial Regex MyRegex();
 }

@@ -31,17 +31,17 @@ public class TestWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureServices((context, services) =>
         {
             // Remove the real DbContext registration
-            services.RemoveAll(typeof(DbContextOptions<MiniBankDbContext>));
-            services.RemoveAll(typeof(MiniBankDbContext));
+            services.RemoveAll<DbContextOptions<MiniBankDbContext>>();
+            services.RemoveAll<MiniBankDbContext>();
 
             // Add InMemory database
             services.AddDbContext<MiniBankDbContext>(options =>
                 options.UseInMemoryDatabase($"TestDb_{Guid.NewGuid()}"));
 
             // Replace mediator
-            services.RemoveAll(typeof(IMediator));
-            services.RemoveAll(typeof(ISender));
-            services.RemoveAll(typeof(IPublisher));
+            services.RemoveAll<IMediator>();
+            services.RemoveAll<ISender>();
+            services.RemoveAll<IPublisher>();
 
             services.AddSingleton<IMediator>(_forwarder);
             services.AddSingleton<ISender>(_forwarder);

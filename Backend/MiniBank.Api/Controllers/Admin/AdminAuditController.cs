@@ -3,16 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using MiniBank.Features.Audit.GetAuditLogs;
 using MiniBank.Features.Messaging;
 
-namespace MiniBank.Api.Controllers;
+namespace MiniBank.Api.Controllers.Admin;
 
-/// <summary>
-/// Admin audit operations.
-/// </summary>
+/// <summary>Admin audit operations (REST resource: /admin/audit).</summary>
 [ApiController]
 [Route("admin/audit")]
 [Authorize(Roles = "Admin")]
 [Produces("application/json")]
-public sealed class AuditController(IMediator mediator) : ControllerBase
+public sealed class AdminAuditController(IMediator mediator) : ControllerBase
 {
     /// <summary>Lists audit logs with filters. [Admin]</summary>
     [HttpGet("logs")]

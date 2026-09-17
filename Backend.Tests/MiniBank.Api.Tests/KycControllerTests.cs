@@ -19,7 +19,7 @@ public class KycControllerTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task Submit_Returns401_WhenNotAuthenticated()
     {
-        var command = new { CustomerId = Guid.NewGuid(), DocumentId = Guid.NewGuid() };
+        var command = new { PrimaryDocumentId = Guid.NewGuid() };
         var response = await _client.PostAsJsonAsync("/kyc/submit", command);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -27,8 +27,7 @@ public class KycControllerTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task GetStatus_Returns401_WhenNotAuthenticated()
     {
-        var customerId = Guid.NewGuid();
-        var response = await _client.GetAsync($"/kyc/{customerId}");
+        var response = await _client.GetAsync("/kyc/status");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

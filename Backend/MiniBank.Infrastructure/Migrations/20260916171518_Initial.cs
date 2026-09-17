@@ -9,6 +9,8 @@ namespace MiniBank.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class Initial : Migration
     {
+        private static readonly string[] columns = new[] { "entity_type", "entity_id" };
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -403,7 +405,7 @@ namespace MiniBank.Infrastructure.Migrations
             migrationBuilder.CreateIndex(
                 name: "ix_audit_entity",
                 table: "audit_logs",
-                columns: new[] { "entity_type", "entity_id" });
+                columns: columns);
 
             migrationBuilder.CreateIndex(
                 name: "ix_audit_entity_type",

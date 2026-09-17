@@ -5,16 +5,17 @@ using MiniBank.Features.Customers;
 using MiniBank.Features.Customers.GetCurrentCustomer;
 using MiniBank.Features.Customers.GetCustomer;
 using MiniBank.Features.Customers.RegisterCustomer;
-using MiniBank.Features.Customers.UpdateCustomer;
+using MiniBank.Features.Customers.UpdateCurrentCustomer;
 using MiniBank.Features.Messaging;
 
-namespace MiniBank.Api.Controllers;
+namespace MiniBank.Api.Controllers.Customer;
 
 /// <summary>
-/// Customer profile endpoints (REST resource: /customers).
-/// GET (collection)  → own profile from token.
-/// POST (collection) → register (anonymous).
-/// GET/PUT by id     → self-service with ownership enforced in handler; admins read any.
+/// Customer self-service profile (REST resource: /customers).
+/// All identity comes from the token — no customer id in any route or body,
+/// so one customer can never address another customer's profile.
+/// Registration lives here too (POST /customers/register), so auth + profile
+/// are one cohesive customer surface instead of two controllers.
 /// </summary>
 [ApiController]
 [Route("customers")]
@@ -31,37 +32,40 @@ public sealed class CustomersController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<CustomerResponse>> Register(RegisterCustomerCommand command, CancellationToken cancellationToken)
     {
         var response = await mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = response.CustomerId }, response);
+        return CreatedAtAction(nameof(GetProfile), response);
+    }
+
+    /// <summary>Registers a new customer — canonical registration route, same handler as POST /customers. (Anonymous)</summary>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [EnableRateLimiting("auth_endpoints")]
+    [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<CustomerResponse>> RegisterCanonical(RegisterCustomerCommand command, CancellationToken cancellationToken)
+    {
+        var response = await mediator.Send(command, cancellationToken);
+        return CreatedAtAction(nameof(GetProfile), response);
     }
 
     /// <summary>Returns the authenticated caller's own profile (identity from token).</summary>
-    [HttpGet]
+    [HttpGet("profile")]
     [Authorize]
     [ProducesResponseType(typeof(CustomerDetailResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CustomerDetailResponse>> GetCurrent(CancellationToken cancellationToken)
+    public async Task<ActionResult<CustomerDetailResponse>> GetProfile(CancellationToken cancellationToken)
     {
         var response = await mediator.Send(new GetCurrentCustomerQuery(), cancellationToken);
         return response is null ? NotFound() : Ok(response);
     }
 
-    /// <summary>Returns a customer profile. Owners read their own; admins read any.</summary>
-    [HttpGet("{id:guid}")]
-    [Authorize]
-    [ProducesResponseType(typeof(CustomerDetailResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CustomerDetailResponse>> GetById(Guid id, CancellationToken cancellationToken)
-        => Ok(await mediator.Send(new GetCustomerQuery(id), cancellationToken));
-
-    /// <summary>Updates a customer profile. Owners update their own; admins may update any.</summary>
-    [HttpPut("{id:guid}")]
+    /// <summary>Updates the authenticated caller's own profile (identity from token).</summary>
+    [HttpPut("profile")]
     [Authorize]
     [ProducesResponseType(typeof(CustomerResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CustomerResponse>> Update(Guid id, UpdateProfileRequest request, CancellationToken cancellationToken)
-        => Ok(await mediator.Send(new UpdateCustomerCommand(id, request.FullName, request.PhoneNumber), cancellationToken));
+    public async Task<ActionResult<CustomerResponse>> UpdateProfile(UpdateProfileRequest request, CancellationToken cancellationToken)
+        => Ok(await mediator.Send(new UpdateCurrentCustomerCommand(request.FullName, request.PhoneNumber), cancellationToken));
 }
 
 public sealed record UpdateProfileRequest(string FullName, string PhoneNumber);

@@ -12,7 +12,7 @@ namespace MiniBank.Architecture.Tests;
 /// These tests are READ-ONLY — they report violations, they do not fix them.
 /// Run with: dotnet test Backend.Tests/MiniBank.Architecture.Tests -c Release
 /// </summary>
-public class ArchitectureTests
+public partial class ArchitectureTests
 {
     private static readonly Assembly DomainAssembly = typeof(Customer).Assembly;
     private static readonly Assembly FeaturesAssembly = typeof(IMediator).Assembly;
@@ -62,7 +62,7 @@ public class ArchitectureTests
                     || t.Namespace == "MiniBank.Domain.AuditAggregate"
                     || t.Namespace == "MiniBank.Domain.RiskAggregate")
                 && t.IsClass && !t.IsInterface && !t.IsEnum && !t.IsValueType
-                && !System.Text.RegularExpressions.Regex.IsMatch(t.Name, ".*(Id|Status|Type|Action|Level)$"))
+                && !MyRegex().IsMatch(t.Name))
             .ToList();
 
         Assert.NotEmpty(candidates);
@@ -301,8 +301,7 @@ public class ArchitectureTests
             // Filter to aggregate namespaces
             var aggregateViolations = failing.Where(n => n.Contains("Controllers")).ToList();
             // For report we include all; currently expect to fail if controllers reference Domain
-            Assert.True(false,
-                $"Controllers should not depend on Domain directly (use Features DTOs):{Environment.NewLine}{string.Join(Environment.NewLine, aggregateViolations)}");
+            Assert.Fail($"Controllers should not depend on Domain directly (use Features DTOs):{Environment.NewLine}{string.Join(Environment.NewLine, aggregateViolations)}");
         }
     }
 
@@ -373,4 +372,7 @@ public class ArchitectureTests
         Assert.False(featuresToApi, "Features -> Api circular.");
         Assert.False(infraToApi, "Infrastructure -> Api circular.");
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(".*(Id|Status|Type|Action|Level)$")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex();
 }

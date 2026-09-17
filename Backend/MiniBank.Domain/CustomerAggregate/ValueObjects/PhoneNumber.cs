@@ -4,7 +4,7 @@ using MiniBank.Domain.BuildingBlocks.Exceptions;
 
 namespace MiniBank.Domain.CustomerAggregate.ValueObjects;
 
-public sealed record PhoneNumber
+public sealed partial record PhoneNumber
 {
     private string Value { get; }
 
@@ -13,7 +13,7 @@ public sealed record PhoneNumber
         if (string.IsNullOrWhiteSpace(value))
             throw new DomainValidationException(nameof(PhoneNumber), "Phone number cannot be empty.");
 
-        if (!Regex.IsMatch(value, @"^\d+$"))
+        if (!MyRegex().IsMatch(value))
             throw new DomainValidationException(nameof(PhoneNumber), "Invalid phone number, only numbers allowed.");
 
         if (value.Length < 10 || value.Length > 15)
@@ -27,4 +27,7 @@ public sealed record PhoneNumber
 
     public static implicit operator PhoneNumber(string phoneNumber)
         => new(phoneNumber);
+
+    [GeneratedRegex(@"^\d+$")]
+    private static partial Regex MyRegex();
 }

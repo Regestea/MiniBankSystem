@@ -2,11 +2,12 @@ using Dapper;
 using MiniBank.Abstractions;
 using MiniBank.Features.Messaging;
 
-namespace MiniBank.Features.Kyc.GetKycStatus;
+namespace MiniBank.Features.Kyc.GetCurrentKycStatus;
 
-internal sealed class GetKycStatusHandler(
+/// <summary>Reads the caller's own KYC row — identity from the token, no ownership guard needed.</summary>
+internal sealed class GetCurrentKycStatusHandler(
     ISqlConnectionFactory connectionFactory,
-    IAccessGuard accessGuard) : IQueryHandler<GetKycStatusQuery, GetKycStatusResponse>
+    ICurrentUserContext currentUser) : IQueryHandler<GetCurrentKycStatusQuery, GetCurrentKycStatusResponse>
 {
     private const string Sql = """
         SELECT kyc_id              AS KycId,
@@ -20,19 +21,17 @@ internal sealed class GetKycStatusHandler(
         WHERE  customer_id = @CustomerId
         """;
 
-    public async Task<GetKycStatusResponse> HandleAsync(GetKycStatusQuery query, CancellationToken cancellationToken = default)
+    public async Task<GetCurrentKycStatusResponse> HandleAsync(GetCurrentKycStatusQuery query, CancellationToken cancellationToken = default)
     {
-        await accessGuard.EnsureCustomerOwnershipAsync(query.CustomerId, cancellationToken);
-
         using var connection = connectionFactory.CreateOpenConnection();
 
         var row = await connection.QuerySingleOrDefaultAsync<KycRow>(
-            new CommandDefinition(Sql, new { query.CustomerId }, cancellationToken: cancellationToken));
+            new CommandDefinition(Sql, new { CustomerId = currentUser.UserId }, cancellationToken: cancellationToken));
 
         if (row is null)
-            return new GetKycStatusResponse(null, "NotFound", null, null, null, null, DateTimeOffset.MinValue);
+            return new GetCurrentKycStatusResponse(null, "NotFound", null, null, null, null, DateTimeOffset.MinValue);
 
-        return new GetKycStatusResponse(
+        return new GetCurrentKycStatusResponse(
             row.KycId, row.Status.ToString(), row.PrimaryDocumentId,
             row.SubmittedAt, row.ReviewedAt, row.RejectionReason, row.CreatedAt);
     }

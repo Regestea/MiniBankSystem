@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using MiniBank.Features.Customers;
 using MiniBank.Features.Customers.GetCustomer;
 using MiniBank.Features.Customers.GetCurrentCustomer;
+using MiniBank.Features.Customers.UpdateCurrentCustomer;
 
 namespace MiniBank.Api.Tests;
 
@@ -24,51 +25,61 @@ public class CustomersControllerTests : IClassFixture<TestWebApplicationFactory>
     // --- 401 Unauthorized ---
 
     [Fact]
-    public async Task GetCurrent_Returns401_WhenNotAuthenticated()
+    public async Task GetProfile_Returns401_WhenNotAuthenticated()
     {
-        var response = await _unauthClient.GetAsync("/customers");
+        var response = await _unauthClient.GetAsync("/customers/profile");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
-    public async Task GetById_Returns401_WhenNotAuthenticated()
+    public async Task UpdateProfile_Returns401_WhenNotAuthenticated()
     {
-        var id = Guid.NewGuid();
-        var response = await _unauthClient.GetAsync($"/customers/{id}");
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task Update_Returns401_WhenNotAuthenticated()
-    {
-        var id = Guid.NewGuid();
-        var request = new { FullName = "Updated Name", PhoneNumber = "+1234567890" };
-        var response = await _unauthClient.PutAsJsonAsync($"/customers/{id}", request);
+        var request = new { FullName = "Updated Name", PhoneNumber = "09123456789" };
+        var response = await _unauthClient.PutAsJsonAsync("/customers/profile", request);
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     // --- Happy path ---
 
     [Fact]
-    public async Task GetCurrent_Returns200_WhenAuthenticated()
+    public async Task GetProfile_Returns200_WhenAuthenticated()
     {
         var userId = Guid.NewGuid();
         _factory.MockMediator.Send(Arg.Any<GetCurrentCustomerQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new CustomerDetailResponse(userId, "John Doe", "john@test.com", "+1234567890", "Verified", DateTimeOffset.UtcNow));
+            .Returns(new CustomerDetailResponse(userId, "John Doe", "john@test.com", "09123456789", "Verified", DateTimeOffset.UtcNow));
 
         var client = _factory.CreateAuthenticatedClient(userId);
-        var response = await client.GetAsync("/customers");
+        var response = await client.GetAsync("/customers/profile");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task GetById_Returns200_WhenValidId()
+    public async Task UpdateProfile_Returns200_WhenAuthenticated()
+    {
+        var userId = Guid.NewGuid();
+        _factory.MockMediator.Send(Arg.Any<UpdateCurrentCustomerCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new CustomerResponse(userId, "Updated Name", "john@test.com", "09123456789", "Verified", DateTimeOffset.UtcNow));
+
+        var client = _factory.CreateAuthenticatedClient(userId);
+        var request = new { FullName = "Updated Name", PhoneNumber = "09123456789" };
+        var response = await client.PutAsJsonAsync("/customers/profile", request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        // Identity comes from the token — the command must not carry any customer id.
+        await _factory.MockMediator.Received(1).Send(
+            Arg.Is<UpdateCurrentCustomerCommand>(c => c.FullName == "Updated Name" && c.PhoneNumber == "09123456789"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AdminGetCustomer_Returns200_WhenAdmin()
     {
         var customerId = Guid.NewGuid();
         _factory.MockMediator.Send(Arg.Any<GetCustomerQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new CustomerDetailResponse(customerId, "Jane Doe", "jane@test.com", "+0987654321", "Verified", DateTimeOffset.UtcNow));
+            .Returns(new CustomerDetailResponse(customerId, "Jane Doe", "jane@test.com", "09123456789", "Verified", DateTimeOffset.UtcNow));
 
-        var response = await _authClient.GetAsync($"/customers/{customerId}");
+        var adminClient = _factory.CreateAuthenticatedClient(role: "Admin");
+        var response = await adminClient.GetAsync($"/admin/customers/{customerId}");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await response.Content.ReadFromJsonAsync<CustomerDetailResponse>();
@@ -79,14 +90,15 @@ public class CustomersControllerTests : IClassFixture<TestWebApplicationFactory>
     // --- 400 Bad Request ---
 
     [Fact]
-    public async Task GetById_Returns404_WhenCustomerNotFound()
+    public async Task AdminGetCustomer_Returns404_WhenCustomerNotFound()
     {
         var customerId = Guid.NewGuid();
         _factory.MockMediator.Send(Arg.Any<GetCustomerQuery>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<CustomerDetailResponse>(
                 new Domain.BuildingBlocks.Exceptions.NotFoundException("customer", customerId)));
 
-        var response = await _authClient.GetAsync($"/customers/{customerId}");
+        var adminClient = _factory.CreateAuthenticatedClient(role: "Admin");
+        var response = await adminClient.GetAsync($"/admin/customers/{customerId}");
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

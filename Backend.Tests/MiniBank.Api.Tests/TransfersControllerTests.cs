@@ -28,6 +28,14 @@ public class TransfersControllerTests : IClassFixture<TestWebApplicationFactory>
     // --- 401 Unauthorized ---
 
     [Fact]
+    public async Task Preview_Returns401_WhenNotAuthenticated()
+    {
+        var request = new { ToAccountId = Guid.NewGuid() };
+        var response = await _unauthClient.PostAsJsonAsync("/transfers/preview", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task Transfer_Returns401_WhenNotAuthenticated()
     {
         var command = new

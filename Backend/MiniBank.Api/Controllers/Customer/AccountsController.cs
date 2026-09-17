@@ -10,8 +10,9 @@ using MiniBank.Features.Accounts.OpenAccount;
 using MiniBank.Features.Accounts.Withdraw;
 using MiniBank.Features.Messaging;
 
-namespace MiniBank.Api.Controllers;
+namespace MiniBank.Api.Controllers.Customer;
 
+/// <summary>Customer account self-service (REST resource: /accounts). Every action is scoped to the caller's own accounts.</summary>
 [ApiController]
 [Route("accounts")]
 [Authorize]

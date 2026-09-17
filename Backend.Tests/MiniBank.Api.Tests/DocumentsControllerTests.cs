@@ -33,10 +33,9 @@ public class DocumentsControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task ListCustomerDocuments_Returns401_WhenNotAuthenticated()
+    public async Task ListMine_Returns401_WhenNotAuthenticated()
     {
-        var customerId = Guid.NewGuid();
-        var response = await _client.GetAsync($"/customers/{customerId}/documents");
+        var response = await _client.GetAsync("/documents");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

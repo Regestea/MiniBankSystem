@@ -17,10 +17,9 @@ public class RiskControllerTests : IClassFixture<TestWebApplicationFactory>
     }
 
     [Fact]
-    public async Task GetRisk_Returns401_WhenNotAuthenticated()
+    public async Task GetStatus_Returns401_WhenNotAuthenticated()
     {
-        var customerId = Guid.NewGuid();
-        var response = await _client.GetAsync($"/risk/{customerId}");
+        var response = await _client.GetAsync("/risk/status");
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }
@@ -36,6 +35,14 @@ public class AdminRiskControllerTests : IClassFixture<TestWebApplicationFactory>
         _factory = factory;
         _factory.ResetMock();
         _client = factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task GetRisk_Returns401_WhenNotAuthenticated()
+    {
+        var customerId = Guid.NewGuid();
+        var response = await _client.GetAsync($"/admin/risk/{customerId}");
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

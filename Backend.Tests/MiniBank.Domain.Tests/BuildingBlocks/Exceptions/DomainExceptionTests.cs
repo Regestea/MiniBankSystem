@@ -33,8 +33,8 @@ public class DomainExceptionTests
     public void DomainException_IsException()
     {
         var ex = new DomainValidationException("f", "d");
-        Assert.IsAssignableFrom<Exception>(ex);
-        Assert.IsAssignableFrom<DomainException>(ex);
+        Assert.IsType<Exception>(ex, exactMatch: false);
+        Assert.IsType<DomainException>(ex, exactMatch: false);
     }
 
     [Fact]

@@ -5,27 +5,11 @@ using MiniBank.Features.Risk.ListHighRiskCustomers;
 using MiniBank.Features.Risk.UpdateRiskLevel;
 using MiniBank.Features.Messaging;
 
-namespace MiniBank.Api.Controllers;
+namespace MiniBank.Api.Controllers.Admin;
 
 /// <summary>
-/// Risk management operations.
-/// </summary>
-[ApiController]
-[Route("risk")]
-[Authorize]
-[Produces("application/json")]
-public sealed class RiskController(IMediator mediator) : ControllerBase
-{
-    /// <summary>Gets customer risk info. [Authenticated]</summary>
-    [HttpGet("{customerId:guid}")]
-    [ProducesResponseType(typeof(GetCustomerRiskResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<GetCustomerRiskResponse>> GetRisk(Guid customerId, CancellationToken cancellationToken)
-        => Ok(await mediator.Send(new GetCustomerRiskQuery(customerId), cancellationToken));
-}
-
-/// <summary>
-/// Admin risk management operations.
+/// Admin risk management (REST resource: /admin/risk).
+/// Customer self-service (own risk) lives in Controllers/Customer/RiskController.
 /// </summary>
 [ApiController]
 [Route("admin/risk")]
@@ -33,6 +17,13 @@ public sealed class RiskController(IMediator mediator) : ControllerBase
 [Produces("application/json")]
 public sealed class AdminRiskController(IMediator mediator) : ControllerBase
 {
+    /// <summary>Gets any customer's risk info. [Admin]</summary>
+    [HttpGet("{customerId:guid}")]
+    [ProducesResponseType(typeof(GetCustomerRiskResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<GetCustomerRiskResponse>> GetRisk(Guid customerId, CancellationToken cancellationToken)
+        => Ok(await mediator.Send(new GetCustomerRiskQuery(customerId), cancellationToken));
+
     /// <summary>Updates customer risk level. [Admin]</summary>
     [HttpPost("{customerId:guid}/level")]
     [ProducesResponseType(typeof(UpdateRiskLevelResponse), StatusCodes.Status200OK)]
