@@ -14,6 +14,9 @@ GET {{base}}/openapi/v1.json
 Accept: application/json
 
 ### Register a new customer (anonymous, replaces disabled /register)
+# Self-service onboarding: the customer is verified immediately and one Active
+# Current account is opened automatically, so the web/mobile frontends can show
+# a dashboard right after register + login (no admin step needed).
 POST {{base}}/customers/register
 Content-Type: application/json
 
@@ -31,6 +34,14 @@ Content-Type: application/json
 {
   "email": "demo@minibank.local",
   "password": "Demo123!"
+}
+
+### Refresh the access token (Identity API, used automatically by the shared Axios client)
+POST {{base}}/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "YOUR_REFRESH_TOKEN"
 }
 
 ### My profile (identity from token — no id needed)
