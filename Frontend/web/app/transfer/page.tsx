@@ -45,7 +45,7 @@ function TransferFlow(): React.JSX.Element {
 
   return (
     <>
-      <PageHeader title="Transfer Money" subtitle="Send USD by account number. Mock flow — no real money moves." />
+      <PageHeader title="Transfer Money" subtitle="Send USD by account number. Verify the recipient before confirming." />
       <Stepper steps={STEPS} current={stepIndex(flow.step)} />
 
       {flow.step === "details" && (

@@ -20,7 +20,7 @@ export default function TopUpPage(): React.JSX.Element {
 
   return (
     <>
-      <PageHeader title="Top Up Account" subtitle="Fake payment gateway — enter an amount only. No card needed." />
+      <PageHeader title="Top Up Account" subtitle="Instant top-up — enter an amount only. No card needed." />
 
       {flow.step === "amount" && (
         <Card>
@@ -61,7 +61,7 @@ export default function TopUpPage(): React.JSX.Element {
 
       {flow.step === "processing" && (
         <Card>
-          <LoadingState message="Processing fake payment…" />
+          <LoadingState message="Processing top-up…" />
         </Card>
       )}
 
