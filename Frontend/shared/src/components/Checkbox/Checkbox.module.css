@@ -20,7 +20,7 @@
   height: 24px;
   border-radius: 8px;
   border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-input);
   display: inline-flex;
   align-items: center;
   justify-content: center;

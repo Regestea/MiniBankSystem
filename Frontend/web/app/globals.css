@@ -1,5 +1,9 @@
 /* Web-global additions on top of shared design tokens. */
 
 a {
-  color: var(--color-primary);
+  color: var(--color-secondary-light);
+}
+
+p[role="alert"] {
+  color: var(--color-error);
 }

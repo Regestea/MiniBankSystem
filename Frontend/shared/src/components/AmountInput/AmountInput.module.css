@@ -18,13 +18,13 @@
   padding: 0 var(--space-4);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: var(--color-input);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .wrap:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  border-color: var(--color-primary-light);
+  box-shadow: 0 0 0 3px rgba(76, 201, 240, 0.22);
 }
 
 .invalid {
@@ -34,7 +34,7 @@
 .symbol {
   font-size: var(--font-size-2xl);
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-secondary-light);
 }
 
 .input {
@@ -45,12 +45,12 @@
   font-family: var(--font-family);
   font-size: var(--font-size-2xl);
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: #ffffff;
   min-width: 0;
 }
 
 .input::placeholder {
-  color: var(--color-text-muted);
+  color: #7198b0;
   font-weight: 500;
 }
 

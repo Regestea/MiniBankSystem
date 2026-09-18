@@ -29,8 +29,8 @@
 }
 
 .out {
-  background: var(--color-primary-soft);
-  color: var(--color-primary-dark);
+  background: rgba(76, 201, 240, 0.16);
+  color: var(--color-secondary-light);
 }
 
 .main {
@@ -65,5 +65,5 @@
 }
 
 .expense {
-  color: var(--color-text-primary);
+  color: var(--color-expense);
 }

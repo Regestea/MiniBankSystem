@@ -9,13 +9,13 @@
 }
 
 .waveA {
-  background: linear-gradient(135deg, #0369a1, #0891b2);
+  background: linear-gradient(135deg, #087fc1, #35bce8);
 }
 
 .waveB {
-  background: linear-gradient(135deg, #0c4a6e, #38bdf8);
+  background: linear-gradient(135deg, #0d3555, #159ed7);
 }
 
 .waveC {
-  background: linear-gradient(135deg, #0891b2, #22d3ee);
+  background: linear-gradient(135deg, #159ed7, #4cc9f0);
 }

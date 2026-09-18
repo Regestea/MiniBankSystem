@@ -3,13 +3,15 @@
   align-items: center;
   gap: var(--space-4);
   width: 100%;
-  background: var(--color-surface);
+  background: linear-gradient(145deg, #0b2d4a 0%, #082642 100%);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   padding: var(--space-4);
   text-align: left;
   font-family: var(--font-family);
+  color: var(--color-text-primary);
 }
 
 .clickable {
@@ -46,6 +48,6 @@
 .action {
   font-size: var(--font-size-sm);
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-secondary-light);
   white-space: nowrap;
 }

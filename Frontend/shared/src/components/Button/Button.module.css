@@ -26,34 +26,36 @@
 }
 
 .primary {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  color: var(--color-text-on-primary);
+  background: linear-gradient(135deg, #159ed7 0%, #087fc1 100%);
+  color: #ffffff;
   box-shadow: var(--shadow-button);
 }
 
 .primary:not(:disabled):hover {
-  background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary-darker) 100%);
+  background: linear-gradient(135deg, #0b8ed1 0%, #065d8f 100%);
 }
 
 .secondary {
-  background: var(--color-primary-soft);
-  color: var(--color-primary-dark);
+  background: var(--color-surface-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
 }
 
 .secondary:not(:disabled):hover {
-  background: var(--color-secondary-soft);
+  background: var(--color-surface-tint);
+  border-color: var(--color-primary-light);
 }
 
 .ghost {
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-secondary-light);
   border: 1.5px solid var(--color-border);
   box-shadow: none;
 }
 
 .ghost:not(:disabled):hover {
   border-color: var(--color-primary-light);
-  background: var(--color-surface-elevated);
+  background: rgba(76, 201, 240, 0.1);
 }
 
 .danger {

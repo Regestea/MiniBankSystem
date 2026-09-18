@@ -1,5 +1,7 @@
 import React from "react";
+import type { CSSProperties } from "react";
 import styles from "./BalanceCard.module.css";
+import { imageUrls } from "../../constants/imageUrls";
 import { formatCurrency } from "../../utils/format";
 
 /** Prominent balance display. Data-driven: pass `balance` from BankContext. */
@@ -12,8 +14,14 @@ export function BalanceCard({
   accountNumber?: string;
   compact?: boolean;
 }): React.JSX.Element {
+  // Centralized scenic layer; gradient fallback remains if the URL fails.
+  const scenic = { "--ocean-image": `url("${imageUrls.dashboardBackground}")` } as CSSProperties;
   return (
-    <section className={`${styles.card} ocean-placeholder ${compact ? styles.compact : ""}`} aria-label="Account balance">
+    <section
+      className={`${styles.card} ocean-placeholder ${compact ? styles.compact : ""}`}
+      style={scenic}
+      aria-label="Account balance"
+    >
       <div className={styles.inner}>
         <p className={styles.eyebrow}>Total Balance</p>
         <p className={styles.balance}>{formatCurrency(balance)}</p>

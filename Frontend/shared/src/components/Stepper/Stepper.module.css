@@ -39,12 +39,12 @@
 
 .current .dot {
   background: var(--color-primary);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-light);
   color: #fff;
 }
 
 .current .label {
-  color: var(--color-primary-dark);
+  color: #ffffff;
   font-weight: 700;
 }
 

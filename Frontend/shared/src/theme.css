@@ -1,52 +1,68 @@
 /* ============================================================
-   Mini Bank — Water / Ocean design tokens (single theme).
-   There is NO second theme. Import once per app entrypoint.
-   Scenic/ocean image areas are CSS gradient placeholders:
-   replace `background: linear-gradient(...)` with
-   `background-image: url(...)` when real assets arrive.
+   Mini Bank — DARK OCEAN / DEEP BLUE banking theme (single theme).
+   There is NO light mode, NO theme switcher.
+   All layouts consume these tokens; do not hardcode colors elsewhere.
+   Scenic/ocean image areas: CSS ocean gradient fallback + optional
+   remote image layered on top via `imageUrls.*` (see constants/imageUrls).
    ============================================================ */
 
 :root {
-  /* Primary — ocean blue scale */
-  --color-primary: #0369a1;
-  --color-primary-dark: #0c4a6e;
-  --color-primary-darker: #082f49;
-  --color-primary-light: #38bdf8;
-  --color-primary-soft: #e0f2fe;
+  /* ---- Ocean scale (source of truth) ---- */
+  --color-ocean-950: #061a2e;
+  --color-ocean-900: #071f35;
+  --color-ocean-850: #082642;
+  --color-ocean-800: #0b2d4a;
+  --color-ocean-700: #0d3555;
+  --color-ocean-600: #103d60;
+  --color-ocean-500: #087fc1;
+  --color-ocean-400: #0b8ed1;
+  --color-ocean-300: #159ed7;
+  --color-aqua-500: #35bce8;
+  --color-aqua-400: #4cc9f0;
+  --color-aqua-300: #8fe3ff;
 
-  /* Secondary — cyan / aqua accents */
-  --color-secondary: #06b6d4;
-  --color-secondary-light: #67e8f9;
-  --color-secondary-soft: #cffafe;
+  /* ---- Primary — ocean blue CTA ---- */
+  --color-primary: #0b8ed1;
+  --color-primary-dark: #087fc1;
+  --color-primary-darker: #065d8f;
+  --color-primary-light: #4cc9f0;
+  --color-primary-soft: rgba(76, 201, 240, 0.14);
 
-  /* Backgrounds & surfaces */
-  --color-background: #f0f9ff;
-  --color-surface: #ffffff;
-  --color-surface-elevated: #f8fcff;
-  --color-surface-tint: #e8f4fd;
+  /* ---- Secondary — cyan / aqua accents ---- */
+  --color-secondary: #35bce8;
+  --color-secondary-light: #4cc9f0;
+  --color-secondary-soft: rgba(53, 188, 232, 0.16);
 
-  /* Text */
-  --color-text-primary: #0c2d4d;
-  --color-text-secondary: #4a6b8a;
-  --color-text-muted: #8aa3bb;
+  /* ---- Backgrounds & surfaces (DARK — never white) ---- */
+  --color-background: #061a2e;
+  --color-background-elevated: #071f35;
+  --color-surface: #0b2d4a;
+  --color-surface-elevated: #0d3555;
+  --color-surface-tint: #103d60;
+  --color-input: #082642;
+
+  /* ---- Text ---- */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a8c6da;
+  --color-text-muted: #6f96af;
   --color-text-on-primary: #ffffff;
 
-  /* Borders & separators */
-  --color-border: #d7e7f3;
-  --color-border-soft: #e8f2fa;
-  --color-divider: #e4eff7;
+  /* ---- Borders & separators ---- */
+  --color-border: rgba(90, 180, 230, 0.25);
+  --color-border-soft: rgba(90, 180, 230, 0.18);
+  --color-divider: rgba(90, 180, 230, 0.14);
 
-  /* Financial semantics */
-  --color-income: #059669;
-  --color-income-bg: #d1fae5;
-  --color-expense: #dc2626;
-  --color-expense-bg: #fee2e2;
-  --color-warning: #d97706;
-  --color-warning-bg: #fef3c7;
-  --color-success: #059669;
-  --color-success-bg: #ecfdf5;
-  --color-error: #dc2626;
-  --color-error-bg: #fef2f2;
+  /* ---- Financial semantics (ocean-fitting) ---- */
+  --color-income: #2fd6a3;
+  --color-income-bg: rgba(47, 214, 163, 0.14);
+  --color-expense: #f0837b;
+  --color-expense-bg: rgba(240, 131, 123, 0.14);
+  --color-warning: #f5b453;
+  --color-warning-bg: rgba(245, 180, 83, 0.14);
+  --color-success: #2fd6a3;
+  --color-success-bg: rgba(47, 214, 163, 0.14);
+  --color-error: #ee8f88;
+  --color-error-bg: rgba(238, 143, 136, 0.14);
 
   /* Radius */
   --radius-sm: 8px;
@@ -55,10 +71,10 @@
   --radius-xl: 28px;
   --radius-full: 999px;
 
-  /* Shadows (subtle — banking, not gaming) */
-  --shadow-card: 0 1px 2px rgba(12, 74, 110, 0.06), 0 8px 24px -12px rgba(12, 74, 110, 0.18);
-  --shadow-card-hover: 0 2px 4px rgba(12, 74, 110, 0.08), 0 16px 32px -12px rgba(12, 74, 110, 0.25);
-  --shadow-button: 0 6px 16px -6px rgba(3, 105, 161, 0.5);
+  /* Shadows — subtle depth on dark blue, restrained glow */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 12px 32px -12px rgba(2, 12, 24, 0.7);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.4), 0 18px 40px -12px rgba(2, 12, 24, 0.8);
+  --shadow-button: 0 8px 22px -8px rgba(11, 142, 209, 0.65);
 
   /* Spacing scale */
   --space-1: 4px;
@@ -91,6 +107,15 @@
   /* Layout */
   --content-max-width: 1160px;
   --sidebar-width: 264px;
+
+  /* Ocean gradient fallbacks (used when remote image is absent/fails) */
+  --ocean-gradient-page: radial-gradient(70% 32% at 50% 0%, rgba(53, 188, 232, 0.16) 0%, rgba(53, 188, 232, 0) 70%),
+    linear-gradient(180deg, #071f35 0%, #061a2e 100%);
+  --ocean-gradient-card: linear-gradient(145deg, #0b2d4a 0%, #082642 100%);
+  --ocean-gradient-hero: linear-gradient(135deg, #0d3555 0%, #087fc1 62%, #0b8ed1 100%);
+  --ocean-gradient-badge: linear-gradient(135deg, #087fc1 0%, #35bce8 100%);
+
+  color-scheme: dark;
 }
 
 /* ---- Base reset (shared) ---- */
@@ -100,13 +125,24 @@
   box-sizing: border-box;
 }
 
+html {
+  background: var(--color-background);
+}
+
 body {
   margin: 0;
   font-family: var(--font-family);
-  background: var(--color-background);
+  background: var(--ocean-gradient-page, var(--color-background));
+  background-color: var(--color-background);
+  background-attachment: fixed;
   color: var(--color-text-primary);
   font-size: var(--font-size-base);
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a {
+  color: var(--color-secondary-light);
 }
 
 /* Visible focus for keyboard navigation / a11y */
@@ -116,19 +152,58 @@ body {
   border-radius: var(--radius-sm);
 }
 
+/* Native controls follow the dark ocean theme */
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+::placeholder {
+  color: #7198b0;
+  opacity: 1;
+}
+
+::selection {
+  background: rgba(76, 201, 240, 0.35);
+}
+
+/* Scrollbar fits the dark theme (webkit) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #061a2e;
+}
+::-webkit-scrollbar-thumb {
+  background: #103d60;
+  border-radius: 8px;
+  border: 2px solid #061a2e;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #087fc1;
+}
+
 /* ---- Reusable ocean placeholder surface ----
-   Used where the design reference shows scenic ocean imagery.
-   PLACEHOLDER: swap the gradient for `background-image: url(...)` later.
-   Layout must never depend on this implementation. */
+   Deep-blue gradient fallback. A remote scenic image can be layered
+   on top via inline style / OceanBackground component:
+     style={{ backgroundImage: `url(${imageUrls.x})` }}
+   The gradient underneath remains as graceful fallback. */
 .ocean-placeholder {
-  /* placeholder: scenic ocean backdrop */
-  background:
-    radial-gradient(120% 90% at 85% 10%, rgba(103, 232, 249, 0.55) 0%, rgba(103, 232, 249, 0) 55%),
-    radial-gradient(100% 80% at 10% 90%, rgba(56, 189, 248, 0.4) 0%, rgba(56, 189, 248, 0) 60%),
-    linear-gradient(135deg, #082f49 0%, #0c4a6e 38%, #0369a1 72%, #0891b2 100%);
+  background-color: #082642;
+  background-image:
+    var(--ocean-image, none),
+    radial-gradient(120% 90% at 85% 10%, rgba(76, 201, 240, 0.35) 0%, rgba(76, 201, 240, 0) 55%),
+    radial-gradient(100% 80% at 10% 90%, rgba(21, 158, 215, 0.35) 0%, rgba(21, 158, 215, 0) 60%),
+    linear-gradient(135deg, #0d3555 0%, #082642 45%, #087fc1 100%);
+  background-size: cover, cover, cover, cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  border: 1px solid var(--color-border-soft);
 }
 
 /* Soft wave decoration rendered with pure CSS (no assets). */
@@ -138,8 +213,8 @@ body {
   inset: auto -20% -38% -20%;
   height: 70%;
   background:
-    radial-gradient(60% 100% at 20% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%),
-    radial-gradient(50% 90% at 70% 20%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+    radial-gradient(60% 100% at 20% 0%, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(50% 90% at 70% 20%, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
   border-radius: 50% 50% 0 0 / 100% 100% 0 0;
   pointer-events: none;
 }
