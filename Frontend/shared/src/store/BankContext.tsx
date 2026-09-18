@@ -68,8 +68,8 @@ export function BankProvider({
       setAccount(a);
       setTransactions(t);
       setRecipients(r);
-    } catch {
-      setError("Something went wrong while loading your banking data.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong while loading your banking data.");
     } finally {
       setLoading(false);
     }

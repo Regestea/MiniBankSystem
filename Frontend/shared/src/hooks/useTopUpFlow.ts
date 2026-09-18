@@ -13,7 +13,7 @@ export interface TopUpFlow {
   completed: CompletedTopUp | null;
   setAmountInput: (v: string) => void;
   selectPreset: (v: number) => void;
-  /** amount → processing → success (fake gateway always approves). */
+  /** amount → processing → success (live API top-up). */
   submit: () => Promise<void>;
   reset: () => void;
 }
