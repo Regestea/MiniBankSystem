@@ -64,7 +64,7 @@ internal sealed class GetAuditLogsHandler(ISqlConnectionFactory connectionFactor
         var items = rows.Select(r => new AuditLogItem(
             r.AuditId, r.UserId, r.UserEmail, r.Action.ToString(),
             r.EntityType, r.EntityId, r.OldValues, r.NewValues,
-            r.Description, r.IpAddress, r.CreatedAt)).ToList();
+            r.Description, r.IpAddress, DbTime.Utc(r.CreatedAt))).ToList();
 
         return new GetAuditLogsResponse(items, totalCount);
     }
@@ -73,5 +73,5 @@ internal sealed class GetAuditLogsHandler(ISqlConnectionFactory connectionFactor
         Guid AuditId, Guid UserId, string UserEmail, short Action,
         string EntityType, string EntityId, string? OldValues,
         string? NewValues, string? Description, string? IpAddress,
-        DateTimeOffset CreatedAt);
+        DateTime CreatedAt);
 }

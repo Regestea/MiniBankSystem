@@ -51,17 +51,17 @@ internal sealed class GetCustomerOverviewHandler(
             a.AccountId, a.AccountNumber,
             ((AccountType)a.AccountType).ToString(),
             ((AccountStatus)a.Status).ToString(),
-            a.Balance, a.CreatedAt)).ToList();
+            a.Balance, DbTime.Utc(a.CreatedAt))).ToList();
 
         return new CustomerOverviewResponse(
             customer.CustomerId, customer.FullName, customer.Email, customer.PhoneNumber,
-            ((CustomerStatus)customer.Status).ToString(), customer.CreatedAt,
+            ((CustomerStatus)customer.Status).ToString(), DbTime.Utc(customer.CreatedAt),
             dtos, dtos.Sum(a => a.Balance));
     }
 
     private sealed record CustomerRow(
-        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTimeOffset CreatedAt);
+        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTime CreatedAt);
 
     private sealed record AccountRow(
-        Guid AccountId, string AccountNumber, short AccountType, short Status, decimal Balance, DateTimeOffset CreatedAt);
+        Guid AccountId, string AccountNumber, short AccountType, short Status, decimal Balance, DateTime CreatedAt);
 }

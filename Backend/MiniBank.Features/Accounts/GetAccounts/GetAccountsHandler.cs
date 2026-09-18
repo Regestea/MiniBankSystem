@@ -1,5 +1,6 @@
 using Dapper;
 using MiniBank.Abstractions;
+using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.Ledger;
 using MiniBank.Features.Messaging;
 
@@ -31,9 +32,16 @@ internal sealed class GetAccountsHandler(ISqlConnectionFactory connectionFactory
     {
         using var connection = connectionFactory.CreateOpenConnection();
 
-        var rows = await connection.QueryAsync<AccountDto>(
+        var rows = await connection.QueryAsync<AccountRow>(
             new CommandDefinition(Sql, new { UserId = currentUser.UserId, CreditTypes, Offset = (query.Page - 1) * query.PageSize, Limit = query.PageSize }, cancellationToken: cancellationToken));
 
-        return rows.ToList();
+        return rows.Select(r => new AccountDto(
+            r.AccountId, r.AccountNumber,
+            ((AccountType)r.AccountType).ToString(),
+            ((AccountStatus)r.Status).ToString(),
+            r.Balance, DbTime.Utc(r.CreatedAt))).ToList();
     }
+
+    private sealed record AccountRow(
+        Guid AccountId, string AccountNumber, short AccountType, short Status, decimal Balance, DateTime CreatedAt);
 }

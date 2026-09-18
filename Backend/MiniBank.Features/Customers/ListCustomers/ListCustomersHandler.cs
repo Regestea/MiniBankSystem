@@ -34,12 +34,12 @@ internal sealed class ListCustomersHandler(ISqlConnectionFactory connectionFacto
 
         var response = items.Select(r => new CustomerListItemResponse(
                 r.CustomerId, r.FullName, r.Email, r.PhoneNumber,
-                ((CustomerStatus)r.Status).ToString(), r.CreatedAt))
+                ((CustomerStatus)r.Status).ToString(), DbTime.Utc(r.CreatedAt)))
             .ToList();
 
         return new CustomersPageResponse(response, page, pageSize, total);
     }
 
     private sealed record ListItemRow(
-        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTimeOffset CreatedAt);
+        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTime CreatedAt);
 }

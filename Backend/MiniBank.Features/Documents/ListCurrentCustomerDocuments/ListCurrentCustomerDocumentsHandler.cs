@@ -28,11 +28,11 @@ internal sealed class ListCurrentCustomerDocumentsHandler(
             new CommandDefinition(Sql, new { CustomerId = currentUser.UserId }, cancellationToken: cancellationToken));
 
         var items = rows.Select(r => new DocumentListItem(
-            r.DocumentId, r.FileName, r.Type.ToString(), r.Status.ToString(), r.CreatedAt)).ToList();
+            r.DocumentId, r.FileName, r.Type.ToString(), r.Status.ToString(), DbTime.Utc(r.CreatedAt))).ToList();
 
         return new ListCurrentCustomerDocumentsResponse(items);
     }
 
     private sealed record DocumentRow(
-        Guid DocumentId, string FileName, short Type, short Status, DateTimeOffset CreatedAt);
+        Guid DocumentId, string FileName, short Type, short Status, DateTime CreatedAt);
 }

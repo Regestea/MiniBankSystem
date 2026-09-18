@@ -40,11 +40,11 @@ internal sealed class GetDocumentHandler(
         return new GetDocumentResponse(
             row.DocumentId, row.CustomerId, row.FileName, row.ContentType,
             row.FileSize, row.Type.ToString(), row.Status.ToString(),
-            row.RejectionReason, row.VerifiedBy, row.VerifiedAt, row.CreatedAt);
+            row.RejectionReason, row.VerifiedBy, DbTime.Utc(row.VerifiedAt), DbTime.Utc(row.CreatedAt));
     }
 
     private sealed record DocumentRow(
         Guid DocumentId, Guid CustomerId, string FileName, string ContentType,
         long FileSize, short Type, short Status, string? RejectionReason,
-        Guid? VerifiedBy, DateTimeOffset? VerifiedAt, DateTimeOffset CreatedAt);
+        Guid? VerifiedBy, DateTime? VerifiedAt, DateTime CreatedAt);
 }

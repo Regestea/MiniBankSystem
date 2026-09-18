@@ -32,9 +32,9 @@ internal sealed class GetCustomerHandler(ISqlConnectionFactory connectionFactory
         return row is null
             ? throw new NotFoundException("customer", query.CustomerId)
             : new CustomerDetailResponse(row.CustomerId, row.FullName, row.Email, row.PhoneNumber,
-                                         ((CustomerStatus)row.Status).ToString(), row.CreatedAt);
+                                         ((CustomerStatus)row.Status).ToString(), DbTime.Utc(row.CreatedAt));
     }
 
     private sealed record CustomerDetailRow(
-        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTimeOffset CreatedAt);
+        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTime CreatedAt);
 }

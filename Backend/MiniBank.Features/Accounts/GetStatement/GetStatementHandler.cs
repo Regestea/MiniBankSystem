@@ -62,15 +62,21 @@ internal sealed class GetStatementHandler(ISqlConnectionFactory connectionFactor
             new { query.AccountId, Offset = (page - 1) * pageSize, Limit = pageSize },
             cancellationToken: cancellationToken));
 
-        var entries = (await multi.ReadAsync<StatementEntryDto>()).ToList();
+        var entries = (await multi.ReadAsync<StatementEntryRow>()).ToList();
         var total = await multi.ReadSingleAsync<int>();
 
         // Status mapped via the domain enum instead of hardcoded numbers
         var status = ((AccountStatus)account.Status).ToString();
 
         return new StatementResponse(query.AccountId, account.AccountNumber, status, account.Balance,
-                                     page, pageSize, total, entries);
+                                     page, pageSize, total,
+                                     entries.Select(e => new StatementEntryDto(
+                                         e.LedgerEntryId, ((LedgerEntryType)e.Type).ToString(), e.Amount, DbTime.Utc(e.OccurredOn),
+                                         e.ReferenceId, e.Description)).ToList());
     }
 
     private sealed record AccountRow(Guid AccountId, string AccountNumber, short Status, decimal Balance);
+
+    private sealed record StatementEntryRow(
+        Guid LedgerEntryId, short Type, decimal Amount, DateTime OccurredOn, string? ReferenceId, string? Description);
 }

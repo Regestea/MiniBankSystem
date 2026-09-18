@@ -33,11 +33,11 @@ internal sealed class GetCurrentKycStatusHandler(
 
         return new GetCurrentKycStatusResponse(
             row.KycId, row.Status.ToString(), row.PrimaryDocumentId,
-            row.SubmittedAt, row.ReviewedAt, row.RejectionReason, row.CreatedAt);
+            DbTime.Utc(row.SubmittedAt), DbTime.Utc(row.ReviewedAt), row.RejectionReason, DbTime.Utc(row.CreatedAt));
     }
 
     private sealed record KycRow(
         Guid KycId, short Status, Guid? PrimaryDocumentId,
-        DateTimeOffset? SubmittedAt, DateTimeOffset? ReviewedAt,
-        string? RejectionReason, DateTimeOffset CreatedAt);
+        DateTime? SubmittedAt, DateTime? ReviewedAt,
+        string? RejectionReason, DateTime CreatedAt);
 }

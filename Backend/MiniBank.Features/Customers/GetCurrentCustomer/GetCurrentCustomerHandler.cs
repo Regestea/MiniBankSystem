@@ -26,9 +26,9 @@ internal sealed class GetCurrentCustomerHandler(ISqlConnectionFactory connection
         return row is null
             ? null
             : new CustomerDetailResponse(row.CustomerId, row.FullName, row.Email, row.PhoneNumber,
-                                         ((CustomerStatus)row.Status).ToString(), row.CreatedAt);
+                                         ((CustomerStatus)row.Status).ToString(), DbTime.Utc(row.CreatedAt));
     }
 
     private sealed record CustomerDetailRow(
-        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTimeOffset CreatedAt);
+        Guid CustomerId, string FullName, string Email, string PhoneNumber, short Status, DateTime CreatedAt);
 }

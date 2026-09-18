@@ -51,11 +51,11 @@ internal sealed class ListMyTransactionsHandler(
             items.Select(r => new MyTransactionDto(
                 r.TransactionId, ((TransactionType)r.Type).ToString(),
                 r.Amount, r.SourceAccountNumber, r.DestinationAccountNumber,
-                r.OccurredOn, r.ReferenceId, r.Description)).ToList());
+                DbTime.Utc(r.OccurredOn), r.ReferenceId, r.Description)).ToList());
     }
 
     private sealed record MyTransactionRow(
         Guid TransactionId, short Type, decimal Amount,
         string? SourceAccountNumber, string? DestinationAccountNumber,
-        DateTimeOffset OccurredOn, string ReferenceId, string? Description);
+        DateTime OccurredOn, string ReferenceId, string? Description);
 }
