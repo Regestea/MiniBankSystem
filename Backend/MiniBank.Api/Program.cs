@@ -96,8 +96,19 @@ builder.Services.AddCors(options =>
             });
         }
 
-        app.UseHttpsRedirection();
+        // CORS must run BEFORE https redirection: browsers forbid redirects for
+        // OPTIONS preflights, so an http:// preflight answered with a 307 shows up as
+        // "blocked by CORS policy: Redirect is not allowed for a preflight request".
+        // The CORS middleware answers preflights directly with 200 + allow headers.
         app.UseCors("AllowFrontend");
+
+        // Skip HTTPS redirection for local development: the web (:3000) and mobile
+        // (:5173) frontends call the API over plain http, and 307-redirecting API
+        // calls breaks CORS flows and forces a trusted dev certificate in every
+        // browser. Production (behind TLS-terminating ingress) keeps the redirect.
+        if (!app.Environment.IsDevelopment())
+            app.UseHttpsRedirection();
+
         app.UseDomainExceptionHandling();
         // Rate limiting is time-window based and would make API tests flaky/order-dependent
         // (e.g. 11 anonymous admin 401 probes vs a 5/min anon budget → 429). Skipped in Testing only.
