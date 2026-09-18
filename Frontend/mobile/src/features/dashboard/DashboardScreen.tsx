@@ -1,25 +1,65 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   BalanceCard,
+  Button,
   Card,
   LoadingState,
   SectionHeader,
   TransactionList,
+  getApiBankService,
   getGreeting,
   useBank,
 } from "@minibank/shared/src/index";
 import "./dashboard.css";
 
-/** Feature: dashboard — greeting + balance + quick actions + recent activity. */
+/** Feature: dashboard — greeting + balance + quick actions + recent activity (live API). */
 export function DashboardScreen(): React.JSX.Element {
-  const { profile, account, transactions, loading, error } = useBank();
+  const { profile, account, transactions, loading, error, refresh } = useBank();
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
 
   if (loading) return <LoadingState message="Loading your overview…" />;
+
+  const needsAccount = !account || (error?.toLowerCase().includes("no bank account") ?? false);
+  if (needsAccount && profile) {
+    return (
+      <div className="mobile-screen">
+        <Card>
+          <SectionHeader title="Welcome to Mini Bank" />
+          <p>
+            Hi <strong>{profile.fullName}</strong> — your profile is ready but you don&apos;t have a bank
+            account yet.
+          </p>
+          {openError ? <p role="alert">{openError}</p> : null}
+          <Button
+            fullWidth
+            loading={opening}
+            onClick={() => {
+              setOpening(true);
+              setOpenError(null);
+              getApiBankService()
+                .openAccount("Current")
+                .then(() => refresh())
+                .catch((e: unknown) => setOpenError(e instanceof Error ? e.message : "Could not open an account."))
+                .finally(() => setOpening(false));
+            }}
+          >
+            Open my first account
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   if (error || !profile || !account) {
     return (
       <div className="mobile-screen">
         <Card>
           <p role="alert">{error ?? "Could not load banking data."}</p>
+          <Button variant="secondary" onClick={() => void refresh()}>
+            Retry
+          </Button>
         </Card>
       </div>
     );

@@ -12,14 +12,14 @@ import {
 } from "@minibank/shared/src/index";
 import "./topup.css";
 
-/** Feature: topup — fake gateway (amount only) → processing → success. */
+/** Feature: topup — instant top-up (amount only) → processing → success. */
 export function TopUpScreen(): React.JSX.Element {
   const { account } = useBank();
   const flow = useTopUpFlow();
 
   return (
     <div className="mobile-screen">
-      <PageHeader title="Top Up" subtitle="Fake gateway — amount only." />
+      <PageHeader title="Top Up" subtitle="Instant top-up — amount only." />
 
       {flow.step === "amount" && (
         <Card>
@@ -49,7 +49,7 @@ export function TopUpScreen(): React.JSX.Element {
 
       {flow.step === "processing" && (
         <Card>
-          <LoadingState message="Processing fake payment…" />
+          <LoadingState message="Processing top-up…" />
         </Card>
       )}
 
