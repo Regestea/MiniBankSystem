@@ -1,23 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import type { CSSProperties } from "react";
+import { imageUrls } from "@minibank/shared/src/constants/imageUrls";
+import { useAuth } from "@minibank/shared/src/store/AuthContext";
 import styles from "./Sidebar.module.css";
 
 const ITEMS = [
   { href: "/", label: "Dashboard", icon: "◈" },
   { href: "/transactions", label: "Transactions", icon: "⇄" },
   { href: "/transfer", label: "Transfer", icon: "➤" },
+  { href: "/topup", label: "Top Up", icon: "+" },
   { href: "/recipients", label: "Recipients", icon: "◉" },
   { href: "/profile", label: "Profile", icon: "○" },
 ];
 
 export function Sidebar(): React.JSX.Element {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = (): void => {
+    logout();
+    router.replace("/login");
+  };
+
   return (
     <>
       <aside className={styles.sidebar} aria-label="Primary">
-        <div className={`${styles.brand} ocean-placeholder`}>
+        <div
+          className={`${styles.brand} ocean-placeholder`}
+          style={{ "--ocean-image": `url("${imageUrls.oceanCard}")` } as CSSProperties}
+        >
           <span className={styles.logo} aria-hidden="true">
             ≈
           </span>
@@ -40,7 +55,12 @@ export function Sidebar(): React.JSX.Element {
           })}
         </nav>
         <div className={styles.foot}>
-          <p className={styles.note}>Water banking · mock prototype</p>
+          {user ? <p className={styles.note}>{user.email}</p> : null}
+          <button type="button" className={styles.link} onClick={handleLogout}>
+            <span aria-hidden="true">⎋</span>
+            Sign out
+          </button>
+          <p className={styles.note}>Water banking · live API</p>
         </div>
       </aside>
       <nav className={styles.mobileNav} aria-label="Primary mobile">
