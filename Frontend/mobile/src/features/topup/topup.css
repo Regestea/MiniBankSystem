@@ -10,6 +10,7 @@
   justify-content: space-between;
   align-items: center;
   background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   font-size: var(--font-size-sm);
@@ -18,7 +19,7 @@
 
 .topup-balance strong {
   font-size: var(--font-size-lg);
-  color: var(--color-primary-dark);
+  color: #ffffff;
 }
 
 .topup-presets {
@@ -31,14 +32,15 @@
   min-height: var(--touch-target-min);
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-border);
-  background: var(--color-surface);
+  background: var(--color-input);
   font-weight: 700;
-  color: var(--color-primary-dark);
+  color: var(--color-text-primary);
 }
 
 .topup-preset--on {
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary);
+  background: rgba(76, 201, 240, 0.16);
+  border-color: var(--color-primary-light);
+  color: #ffffff;
 }
 
 .topup-new {
@@ -50,5 +52,5 @@
 
 .topup-new strong {
   font-size: var(--font-size-2xl);
-  color: var(--color-primary-dark);
+  color: #ffffff;
 }

@@ -15,6 +15,7 @@
   align-items: center;
   gap: var(--space-3);
   background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-md);
   padding: var(--space-4);
 }
@@ -48,7 +49,7 @@
 
 .transfer-amount strong {
   font-size: var(--font-size-xl);
-  color: var(--color-primary-dark);
+  color: #ffffff;
 }
 
 .transfer-h2 {
@@ -111,5 +112,6 @@
   border-radius: var(--radius-md);
   text-decoration: none;
   font-weight: 600;
-  color: var(--color-primary);
+  color: var(--color-secondary-light);
+  background: var(--color-surface-elevated);
 }
