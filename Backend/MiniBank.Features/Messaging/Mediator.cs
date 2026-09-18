@@ -52,7 +52,12 @@ internal sealed class Mediator(IServiceProvider serviceProvider) : IMediator
             var handleMethod = handlerType.GetMethod("HandleAsync")
                 ?? throw new InvalidOperationException($"HandleAsync not found on '{handlerType.Name}'.");
 
-            // Compile (handler, request, ct) => (Task<TResponse>)handler.HandleAsync(request, ct)
+            // Compile (handler, request, ct) => handler.HandleAsync(request, ct).
+            // NOTE: Task<TResponse> has no covariance to Task<object>, so the lambda
+            // keeps the exact Task<TResponse> return type and an async wrapper boxes
+            // the awaited result to object. Converting the Task itself to object
+            // (the previous code) breaks every response dispatch with:
+            // "Expression of type 'System.Object' cannot be used for return type 'Task<object>'".
             var handlerParam = Expression.Parameter(typeof(object), "handler");
             var requestParam = Expression.Parameter(typeof(object), "request");
             var ctParam = Expression.Parameter(typeof(CancellationToken), "ct");
@@ -63,17 +68,17 @@ internal sealed class Mediator(IServiceProvider serviceProvider) : IMediator
                 Expression.Convert(requestParam, rt),
                 ctParam);
 
-            var lambda = Expression.Lambda<Func<object, object, CancellationToken, Task<object>>>(
-                Expression.Convert(call, typeof(object)),
+            var lambda = Expression.Lambda<Func<object, object, CancellationToken, Task<TResponse>>>(
+                call,
                 handlerParam, requestParam, ctParam);
 
             var compiled = lambda.Compile();
 
-            return (sp, req, ct) =>
+            return async (sp, req, ct) =>
             {
                 var handler = sp.GetService(handlerType);
                 HandlerNotFoundException.ThrowIfHandlerNull(handler, rt.Name);
-                return compiled(handler!, req, ct);
+                return (object)(await compiled(handler!, req, ct).ConfigureAwait(false))!;
             };
         });
 
