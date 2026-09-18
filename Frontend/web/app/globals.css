@@ -1,0 +1,5 @@
+/* Web-global additions on top of shared design tokens. */
+
+a {
+  color: var(--color-primary);
+}
