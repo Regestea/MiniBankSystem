@@ -13,8 +13,7 @@ namespace MiniBank.Infrastructure.Tests.Fixtures;
 /// </summary>
 public sealed class PostgresFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder()
-        .WithImage("postgres:18.6-alpine")
+    private readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:18.6-alpine")
         .WithDatabase("minibank_tests")
         .WithUsername("postgres")
         .WithPassword("postgres")
