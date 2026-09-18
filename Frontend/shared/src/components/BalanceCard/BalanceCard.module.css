@@ -1,0 +1,53 @@
+.card {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  color: #fff;
+  /* .ocean-placeholder base gradient comes from theme.css */
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-8);
+}
+
+.compact .inner {
+  padding: var(--space-6);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.balance {
+  margin: 0;
+  font-size: var(--font-size-balance);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.compact .balance {
+  font-size: var(--font-size-2xl);
+}
+
+.account {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-sm);
+  color: rgba(255, 255, 255, 0.8);
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.wave {
+  position: absolute;
+  inset: auto -10% -30% -10%;
+  height: 55%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  pointer-events: none;
+}

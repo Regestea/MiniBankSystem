@@ -1,0 +1,46 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  min-height: var(--touch-target-min);
+  user-select: none;
+}
+
+.box {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.custom {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #fff;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.row:has(.box:checked) .custom {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.row:has(.box:focus-visible) .custom {
+  outline: 3px solid var(--color-primary-light);
+  outline-offset: 2px;
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}

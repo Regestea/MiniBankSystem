@@ -1,0 +1,21 @@
+.avatar {
+  flex: none;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+}
+
+.waveA {
+  background: linear-gradient(135deg, #0369a1, #0891b2);
+}
+
+.waveB {
+  background: linear-gradient(135deg, #0c4a6e, #38bdf8);
+}
+
+.waveC {
+  background: linear-gradient(135deg, #0891b2, #22d3ee);
+}

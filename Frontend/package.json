@@ -1,0 +1,17 @@
+{
+  "name": "minibank-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "web",
+    "mobile"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=minibank-web",
+    "build:web": "npm run build --workspace=minibank-web",
+    "dev:mobile": "npm run dev --workspace=minibank-mobile",
+    "build:mobile": "npm run build --workspace=minibank-mobile",
+    "build:all": "npm run build --workspace=@minibank/shared && npm run build --workspace=minibank-web && npm run build --workspace=minibank-mobile"
+  }
+}

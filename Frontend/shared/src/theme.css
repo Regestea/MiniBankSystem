@@ -1,0 +1,145 @@
+/* ============================================================
+   Mini Bank — Water / Ocean design tokens (single theme).
+   There is NO second theme. Import once per app entrypoint.
+   Scenic/ocean image areas are CSS gradient placeholders:
+   replace `background: linear-gradient(...)` with
+   `background-image: url(...)` when real assets arrive.
+   ============================================================ */
+
+:root {
+  /* Primary — ocean blue scale */
+  --color-primary: #0369a1;
+  --color-primary-dark: #0c4a6e;
+  --color-primary-darker: #082f49;
+  --color-primary-light: #38bdf8;
+  --color-primary-soft: #e0f2fe;
+
+  /* Secondary — cyan / aqua accents */
+  --color-secondary: #06b6d4;
+  --color-secondary-light: #67e8f9;
+  --color-secondary-soft: #cffafe;
+
+  /* Backgrounds & surfaces */
+  --color-background: #f0f9ff;
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f8fcff;
+  --color-surface-tint: #e8f4fd;
+
+  /* Text */
+  --color-text-primary: #0c2d4d;
+  --color-text-secondary: #4a6b8a;
+  --color-text-muted: #8aa3bb;
+  --color-text-on-primary: #ffffff;
+
+  /* Borders & separators */
+  --color-border: #d7e7f3;
+  --color-border-soft: #e8f2fa;
+  --color-divider: #e4eff7;
+
+  /* Financial semantics */
+  --color-income: #059669;
+  --color-income-bg: #d1fae5;
+  --color-expense: #dc2626;
+  --color-expense-bg: #fee2e2;
+  --color-warning: #d97706;
+  --color-warning-bg: #fef3c7;
+  --color-success: #059669;
+  --color-success-bg: #ecfdf5;
+  --color-error: #dc2626;
+  --color-error-bg: #fef2f2;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 999px;
+
+  /* Shadows (subtle — banking, not gaming) */
+  --shadow-card: 0 1px 2px rgba(12, 74, 110, 0.06), 0 8px 24px -12px rgba(12, 74, 110, 0.18);
+  --shadow-card-hover: 0 2px 4px rgba(12, 74, 110, 0.08), 0 16px 32px -12px rgba(12, 74, 110, 0.25);
+  --shadow-button: 0 6px 16px -6px rgba(3, 105, 161, 0.5);
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Typography */
+  --font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 26px;
+  --font-size-balance: 34px;
+
+  /* Control heights */
+  --input-height: 52px;
+  --input-height-sm: 44px;
+  --button-height: 52px;
+  --button-height-sm: 42px;
+  --touch-target-min: 44px;
+
+  /* Layout */
+  --content-max-width: 1160px;
+  --sidebar-width: 264px;
+}
+
+/* ---- Base reset (shared) ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus for keyboard navigation / a11y */
+:focus-visible {
+  outline: 3px solid var(--color-primary-light);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Reusable ocean placeholder surface ----
+   Used where the design reference shows scenic ocean imagery.
+   PLACEHOLDER: swap the gradient for `background-image: url(...)` later.
+   Layout must never depend on this implementation. */
+.ocean-placeholder {
+  /* placeholder: scenic ocean backdrop */
+  background:
+    radial-gradient(120% 90% at 85% 10%, rgba(103, 232, 249, 0.55) 0%, rgba(103, 232, 249, 0) 55%),
+    radial-gradient(100% 80% at 10% 90%, rgba(56, 189, 248, 0.4) 0%, rgba(56, 189, 248, 0) 60%),
+    linear-gradient(135deg, #082f49 0%, #0c4a6e 38%, #0369a1 72%, #0891b2 100%);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Soft wave decoration rendered with pure CSS (no assets). */
+.ocean-placeholder::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -38% -20%;
+  height: 70%;
+  background:
+    radial-gradient(60% 100% at 20% 0%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(50% 90% at 70% 20%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  pointer-events: none;
+}
