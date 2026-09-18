@@ -7,12 +7,13 @@ using MiniBank.Features.Accounts.Deposit;
 using MiniBank.Features.Accounts.GetAccounts;
 using MiniBank.Features.Accounts.GetStatement;
 using MiniBank.Features.Accounts.OpenAccount;
+using MiniBank.Features.Accounts.Topup;
 using MiniBank.Features.Accounts.Withdraw;
 using MiniBank.Features.Messaging;
 
 namespace MiniBank.Api.Controllers.Customer;
 
-/// <summary>Customer account self-service (REST resource: /accounts). Every action is scoped to the caller's own accounts.</summary>
+/// <summary>Customer account self-service (REST resource: /accounts). Every action is scoped to the caller's own accounts. Amounts are USD.</summary>
 [ApiController]
 [Route("accounts")]
 [Authorize]
@@ -71,6 +72,17 @@ public sealed class AccountsController(IMediator mediator) : ControllerBase
     public async Task<ActionResult<TransactionResponse>> Withdraw(Guid accountId, WithdrawRequest request, CancellationToken cancellationToken)
         => Ok(await mediator.Send(new WithdrawCommand(accountId, request.Amount, request.IdempotencyKey), cancellationToken));
 
+    /// <summary>Fake-gateway top-up: charges a simulated payment gateway. Body is ONLY the USD amount — no card, no idempotency key. Always approves valid amounts.</summary>
+    [HttpPost("{accountId:guid}/topup")]
+    [EnableRateLimiting("fixed")]
+    [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<TransactionResponse>> Topup(Guid accountId, TopupRequest request, CancellationToken cancellationToken)
+        => Ok(await mediator.Send(new TopupAccountCommand(accountId, request.Amount), cancellationToken));
+
     /// <summary>Closes an account (balance must be zero).</summary>
     [HttpPost("{accountId:guid}/close")]
     [EnableRateLimiting("fixed")]
@@ -85,3 +97,4 @@ public sealed class AccountsController(IMediator mediator) : ControllerBase
 
 public sealed record DepositRequest(decimal Amount, string IdempotencyKey);
 public sealed record WithdrawRequest(decimal Amount, string IdempotencyKey);
+public sealed record TopupRequest(decimal Amount);

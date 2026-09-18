@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AuditAggregate;
+using MiniBank.Domain.BeneficiaryAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.DocumentAggregate;
@@ -50,6 +51,7 @@ public static class ConfigureServices
         builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
         builder.Services.AddScoped<IAccountRepository, AccountRepository>();
         builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+        builder.Services.AddScoped<IBeneficiaryRepository, BeneficiaryRepository>();
         builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
         builder.Services.AddScoped<IKycRepository, KycRepository>();
         builder.Services.AddScoped<IAuditRepository, AuditRepository>();

@@ -12,7 +12,7 @@ Sample (portfolio-only) mini banking backend. **Not for commercial/production us
 - Double-entry ledger (`ledger_entries` owned by `Account` is the balance source of truth)
 - Daily risk limits per level (Low 10k/10, Medium 5k/5, High 1k/3, UTC-day windows) — outflows only; deposits are intentionally outside limits
 - KYC + documents + audit logs + admin endpoints (admins bypass ownership; admin-only commands re-check `IsAdmin` in the handler, not just `[Authorize(Roles="Admin")]`)
-- Auth: ASP.NET Core Identity API (`/login`, `/refresh`, …) with `/register` disabled — registration goes through `POST /customers`. Bearer-token API: no CSRF/antiforgery by design.
+- Auth: ASP.NET Core Identity API (`/login`, `/refresh`, …) with `/register` disabled — registration goes through `POST /customers/register`. Bearer-token API: no CSRF/antiforgery by design.
 - Idempotent money operations via `IdempotencyKey` (client-generated, max 64 chars, GLOBAL `ux_transactions_reference`)
 
 ## Architecture
@@ -21,8 +21,8 @@ Sample (portfolio-only) mini banking backend. **Not for commercial/production us
 Backend/
   MiniBank.Api            → Controllers, Auth, RateLimiting, CORS, Scalar/OpenAPI (no antiforgery: bearer-token API)
   MiniBank.Features       → CQRS (Command/Query + Handler), hand-rolled Mediator, FluentValidation, shared IdempotencyKeys
-  MiniBank.Domain         → Aggregates (Account, Transaction, Customer, Risk, Kyc, Document, Audit),
-                            ValueObjects (Money, AccountNumber, Email, …), DomainEvents
+  MiniBank.Domain         → Aggregates (Account, Transaction, Customer, Risk, Kyc, Document, Audit, Beneficiary),
+                            ValueObjects (Money USD-only, AccountNumber IR-XXXXXXXXXX or 16-digit, Email, …), DomainEvents
   MiniBank.Infrastructure → EF Core (Npgsql) writes, Dapper reads, Identity, UoW, Middleware, Migrations
   MiniBank.Abstractions   → ICurrentUserContext, IAccessGuard, IIdentityUserService, ISqlConnectionFactory
 Backend.Tests/ (5 projects: Domain, Features, Infrastructure, Api, Architecture)
@@ -73,11 +73,17 @@ Then:
 
 | Call | Notes |
 |---|---|
-| `POST /customers` | anonymous register (validates email/password 8+ with upper/lower/digit/special, phone 10–15 digits) |
+| `POST /customers/register` | anonymous register (validates email/password 8+ with upper/lower/digit/special, phone 10–15 digits) |
 | `POST /login` | Identity API → bearer token (use as `Authorization: Bearer …`) |
-| `GET /customers`, `GET /accounts?page=&pageSize=` | self profile / paged accounts with balances (fail-fast `400` on bad paging, no silent clamp) |
+| `GET /customers/profile`, `GET /customers/overview` | self profile / one-page overview: full name, email, phone + every account number with balance + total balance (USD) |
+| `GET /accounts?page=&pageSize=` | paged accounts with balances (fail-fast `400` on bad paging, no silent clamp) |
 | `POST /accounts/{id}/deposit`, `/withdraw` | `{ amount, idempotencyKey }` → `200` (replay included), `409` on key reuse with different payload, `422` on risk/limit |
+| `POST /accounts/{id}/topup` | fake-gateway charge: `{ amount }` only (USD) — always approves valid amounts, server mints `topup-…` reference |
+| `GET /transactions/mine?page=&pageSize=` | transaction history across all own accounts (newest first) with account numbers |
 | `POST /transfers` | `{ fromAccountId, toAccountId, amount, idempotencyKey }` — source must be owned + active |
+| `POST /transfers/preview-by-number` | `{ accountNumber }` (IR-XXXXXXXXXX or 16-digit) → holder full + masked name (step 2: show name) |
+| `POST /transfers/by-account-number` | `{ fromAccountId, toAccountNumber, amount, saveBeneficiary?, idempotencyKey? }` — confirm + transfer (step 3, USD) |
+| `GET /beneficiaries`, `POST /beneficiaries`, `DELETE /beneficiaries/{id}` | saved destinations (account number + holder name) for next transfers |
 | `GET /accounts/{id}/statement?page=&pageSize=` | ordered ledger entries |
 | `POST /accounts` | → `201 Created` with `Location: /accounts/{id}/statement` |
 

@@ -5,7 +5,7 @@ namespace MiniBank.Api.Auth;
 
 /// <summary>
 /// Blocks the default MapIdentityApi "/register" endpoint. Registration must go through
-/// POST /customers or POST /customers/register (CustomersController), which atomically
+/// POST /customers/register (CustomersController), which atomically
 /// creates the IdentityUser AND the Customer aggregate.
 /// The default endpoint would create an orphan IdentityUser with no Customer profile.
 /// </summary>
@@ -24,7 +24,7 @@ public static class IdentityApiRouteGuard
                 return Results.NotFound(new
                 {
                     ErrorCode = "endpoint_disabled",
-                    Message = "Use POST /customers to create an account."
+                    Message = "Use POST /customers/register to create an account."
                 });
             }
 

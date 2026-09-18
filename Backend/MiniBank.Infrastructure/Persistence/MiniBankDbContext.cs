@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.AuditAggregate;
+using MiniBank.Domain.BeneficiaryAggregate;
 using MiniBank.Domain.CustomerAggregate;
 using MiniBank.Domain.DocumentAggregate;
 using MiniBank.Domain.KycAggregate;
@@ -18,6 +19,7 @@ public sealed class MiniBankDbContext(DbContextOptions<MiniBankDbContext> option
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Beneficiary> Beneficiaries => Set<Beneficiary>();
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<KycVerification> KycVerifications => Set<KycVerification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();

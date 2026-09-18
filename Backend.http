@@ -38,6 +38,11 @@ GET {{base}}/customers/profile
 Authorization: Bearer {{token}}
 Accept: application/json
 
+### My overview — one page: full name, email, phone + every account number with balance + total balance (USD)
+GET {{base}}/customers/overview
+Authorization: Bearer {{token}}
+Accept: application/json
+
 ### Update my profile
 PUT {{base}}/customers/profile
 Authorization: Bearer {{token}}
@@ -92,6 +97,20 @@ Content-Type: application/json
   "idempotencyKey": "demo-deposit-manual-1"
 }
 
+### Fake-gateway top-up — body is ONLY the USD amount (no card, no key; always approves valid amounts)
+POST {{base}}/accounts/{{accountId}}/topup
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 100
+}
+
+### My transactions across all my accounts (newest first, paged; balances via /accounts)
+GET {{base}}/transactions/mine?page=1&pageSize=20
+Authorization: Bearer {{token}}
+Accept: application/json
+
 ### Withdraw
 POST {{base}}/accounts/{{accountId}}/withdraw
 Authorization: Bearer {{token}}
@@ -102,13 +121,49 @@ Content-Type: application/json
   "idempotencyKey": "demo-withdraw-manual-1"
 }
 
-### Preview transfer destination (masked holder name, no PII)
+### Preview transfer destination (full + masked holder name, no balances)
 POST {{base}}/transfers/preview
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "toAccountId": "00000000-0000-0000-0000-000000000000"
+}
+
+### Step 2 of account-number flow: enter IR-XXXXXXXXXX or 16-digit number → see holder's FULL name before confirming (USD amount entered in step 1)
+POST {{base}}/transfers/preview-by-number
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountNumber": "IR-1234567890"
+}
+
+### Step 3: confirm + transfer by account number (saveBeneficiary = remember checkbox for next transfers)
+POST {{base}}/transfers/by-account-number
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fromAccountId": "{{accountId}}",
+  "toAccountNumber": "IR-1234567890",
+  "amount": 25,
+  "saveBeneficiary": true
+}
+
+### Saved beneficiaries (remembered account number + holder name for next transfers)
+GET {{base}}/beneficiaries
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Save a beneficiary manually (nickname optional display name)
+POST {{base}}/beneficiaries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountNumber": "IR-1234567890",
+  "nickname": null
 }
 
 ### Transfer (source must be owned by caller)
