@@ -55,6 +55,10 @@ public sealed class AdminSeeder(
             // on AspNetUserRoles.
             await db.SaveChangesAsync();
             await userManager.AddToRoleAsync(admin, AdminRole);
+            // Flush after EACH role assignment: with AutoSaveChanges=false the role link +
+            // stamp update stay staged, and batching two AddToRoleAsync calls into one
+            // SaveChanges breaks the concurrency-stamp tracking (0 rows affected).
+            await db.SaveChangesAsync();
             await userManager.AddToRoleAsync(admin, UserRole);
             await db.SaveChangesAsync();
             logger.LogInformation("Seeded admin user '{Email}' with roles Admin+User.", email);
