@@ -1,4 +1,5 @@
 using MiniBank.Abstractions;
+using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
@@ -12,12 +13,17 @@ namespace MiniBank.Features.Customers.RegisterCustomer;
 
 /// <summary>
 /// Registers a new customer in two phases (Identity persists immediately via UserManager,
-/// then Customer + CustomerRisk persist in one SaveChanges). Shares one Guid across all three.
+/// then Customer + CustomerRisk + first bank account persist in one SaveChanges).
+/// Shares one Guid across Identity and Customer. Self-service onboarding:
+/// the customer is verified immediately and gets one Active Current account,
+/// so the web/mobile frontends can show a dashboard right after register+login
+/// without waiting for the admin panel (built later).
 /// If the second phase fails, compensates by deleting the orphan IdentityUser.
 /// </summary>
 internal sealed class RegisterCustomerHandler(
     ICustomerRepository customers,
     IRiskRepository riskRepo,
+    IAccountRepository accounts,
     IIdentityUserService identityUsers,
     IUnitOfWork unitOfWork,
     ILogger<RegisterCustomerHandler> logger) : ICommandHandler<RegisterCustomerCommand, CustomerResponse>
@@ -34,11 +40,18 @@ internal sealed class RegisterCustomerHandler(
         await identityUsers.CreateUserAsync(customerId.Value, command.Email, command.Password, cancellationToken);
 
         var customer = Customer.Create(command.FullName, email, command.PhoneNumber, customerId);
+        // Instant self-service verification for the MVP frontend (admin review comes later).
+        customer.Verify();
 
         await customers.AddAsync(customer, cancellationToken);
 
         var risk = CustomerRisk.Create(customerId.Value);
         await riskRepo.AddAsync(risk, cancellationToken);
+
+        // First account: opened + approved immediately so dashboard/transfer/topup work instantly.
+        var account = Account.Open(customer.Id, AccountType.Current);
+        account.Approve();
+        await accounts.AddAsync(account, cancellationToken);
 
         try
         {

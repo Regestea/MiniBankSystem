@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using MiniBank.Abstractions;
+using MiniBank.Domain.AccountAggregate;
 using MiniBank.Domain.BuildingBlocks;
 using MiniBank.Domain.BuildingBlocks.Exceptions;
 using MiniBank.Domain.CustomerAggregate;
@@ -17,11 +18,12 @@ public sealed class RegisterCustomerHandlerTests
 {
     private readonly ICustomerRepository _customers = Substitute.For<ICustomerRepository>();
     private readonly IRiskRepository _riskRepo = Substitute.For<IRiskRepository>();
+    private readonly IAccountRepository _accounts = Substitute.For<IAccountRepository>();
     private readonly IIdentityUserService _identity = Substitute.For<IIdentityUserService>();
     private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
     private readonly ILogger<RegisterCustomerHandler> _logger = Substitute.For<ILogger<RegisterCustomerHandler>>();
 
-    private RegisterCustomerHandler CreateHandler() => new(_customers, _riskRepo, _identity, _uow, _logger);
+    private RegisterCustomerHandler CreateHandler() => new(_customers, _riskRepo, _accounts, _identity, _uow, _logger);
 
     [Fact]
     public async Task HandleAsync_Valid_CreatesCustomer_WithSameGuid()
@@ -51,6 +53,33 @@ public sealed class RegisterCustomerHandlerTests
 
         await _identity.Received(1).EnsureUserRoleAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_Valid_VerifiesCustomer_And_CreatesActiveAccount()
+    {
+        _customers.EmailExistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        _identity.CreateUserAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        _identity.EnsureUserRoleAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        Customer? capturedCustomer = null;
+        _customers.AddAsync(Arg.Do<Customer>(c => capturedCustomer = c), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        Account? capturedAccount = null;
+        _accounts.AddAsync(Arg.Do<Account>(a => capturedAccount = a), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var handler = CreateHandler();
+        var response = await handler.HandleAsync(
+            new RegisterCustomerCommand("new@test.com", "P@ssw0rd1", "New User", "09123456789"));
+
+        capturedCustomer.Should().NotBeNull();
+        capturedCustomer!.Status.Should().Be(CustomerStatus.Verified);
+        capturedAccount.Should().NotBeNull();
+        capturedAccount!.Status.Should().Be(AccountStatus.Active);
+        capturedAccount!.CustomerId.Value.Should().Be(response.CustomerId);
     }
 
     [Fact]
