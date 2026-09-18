@@ -1,0 +1,115 @@
+.transfer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.transfer-hint {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.transfer-hero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.transfer-eyebrow {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+}
+
+.transfer-big {
+  margin: 2px 0;
+  font-size: var(--font-size-lg);
+  font-weight: 800;
+}
+
+.transfer-mono {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.transfer-amount {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.transfer-amount strong {
+  font-size: var(--font-size-xl);
+  color: var(--color-primary-dark);
+}
+
+.transfer-h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.transfer-rows {
+  margin: 0;
+}
+
+.transfer-rows div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.transfer-rows div:last-child {
+  border-bottom: 0;
+}
+
+.transfer-rows dt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.transfer-rows dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.transfer-btns {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.transfer-btns > * {
+  flex: 1;
+}
+
+.transfer-error {
+  margin: 0;
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.transfer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--button-height);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  color: var(--color-primary);
+}

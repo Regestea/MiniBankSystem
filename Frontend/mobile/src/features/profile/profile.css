@@ -1,0 +1,58 @@
+.profile-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-md);
+  padding: var(--space-6) var(--space-4);
+  margin-bottom: var(--space-4);
+  color: #fff;
+  text-align: center;
+}
+
+.profile-name {
+  position: relative;
+  z-index: 1;
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+}
+
+.profile-account {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: ui-monospace, Consolas, monospace;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--font-size-sm);
+}
+
+.profile-rows {
+  margin: 0;
+}
+
+.profile-rows div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.profile-rows div:last-child {
+  border-bottom: 0;
+}
+
+.profile-rows dt {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.profile-rows dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.mono {
+  font-family: ui-monospace, Consolas, monospace;
+}

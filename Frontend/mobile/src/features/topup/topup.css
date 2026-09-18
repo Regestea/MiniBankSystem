@@ -1,0 +1,54 @@
+.topup-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.topup-balance {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.topup-balance strong {
+  font-size: var(--font-size-lg);
+  color: var(--color-primary-dark);
+}
+
+.topup-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.topup-preset {
+  min-height: var(--touch-target-min);
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  font-weight: 700;
+  color: var(--color-primary-dark);
+}
+
+.topup-preset--on {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
+.topup-new {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  color: var(--color-text-secondary);
+}
+
+.topup-new strong {
+  font-size: var(--font-size-2xl);
+  color: var(--color-primary-dark);
+}
